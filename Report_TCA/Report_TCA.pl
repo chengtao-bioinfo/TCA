@@ -6,14 +6,11 @@
 use strict;
 use Spreadsheet::ParseExcel;
 use Spreadsheet::ParseExcel::FmtUnicode;
-# use Unicode::Map;
-# use Spreadsheet::WriteExcel;
 use Excel::Writer::XLSX;
 use Excel::Writer::XLSX::Chart::Line;
 use Encode;
 use Win32;
 use Win32::GUI();
-# use Win32::GUI::Grid;
 
 my ($mday,$mon,$year) = (localtime)[3..5];
 $mday = sprintf("%d", $mday);
@@ -22,105 +19,111 @@ $year = $year + 1900;
 
 # my $dateXXX = sprintf ("%4d%02d%02d", $year,$mon,$mday);
 # my $TrialLim = sprintf ("%d%d%d%d%d%d%d%d", ord('C')-65,ord('A')-65,ord('B')-65,ord('I')-65,ord('A')-65,ord('E')-65,ord('D')-65,ord('A')-65);
-my $version = "TCA报告自动生成软件 v1.1 (正式版)";
+my $version = "STR报告自动生成软件 v0.1 (开发版)";
 
 my $pwd = `cd`;
-chomp $pwd;
+chomp $pwd; print "L28:" . $pwd . "\n";
 
-my %sampleDate;
-my %receiveDate;
-my %sampleType;
-my %Chimerism;
-my %SampleID;
-my %HasChimerism;
-my %ReportDate;
-my @exp_list;
+my %sampleDate;  # 记录 "样本编号 (.PrevSamples.txt) / 实验编码 (供患信息)" 对应的 "采样日期"  【.PrevSamples.txt】
+my %receiveDate;  # 记录 "样本编号 (.PrevSamples.txt) / 实验编码 (供患信息)" 对应的 "收样日期"  【.PrevSamples.txt】
+my %sampleType;  # 记录 "样本编号 (.PrevSamples.txt) / 实验编码 (供患信息)" 对应的"样本类型" 存入 %sampleType  (********* 样本编号 对应 供患信息 中的 实验编码，前后最好统一起来 ***********)  【.PrevSamples.txt】
+my %Chimerism;  # hash表，用于存储每个 患者编码 对应的每次检测的 嵌合率 结果  【.PrevSamples.txt】
+my %SampleID;  # hash表，用于存储每个 患者编码 对应的每次检测的 实验编码 / 患者编码: HUN001胡琳  (构建每个患者的唯一编码, 医院编号+姓名)  【.PrevSamples.txt】
+my %HasChimerism;  # 实验编码 与 患者编码的对应关系，如: STR1708646-T <=> HUN001胡琳  【.PrevSamples.txt】
+my %ReportDate;  # hash表，用于存储每个 患者编码 对应的 每次检测 的 报告日期  【.PrevSamples.txt】
+my @exp_list;  # 将 实验编码 存入数组 @exp_list  【供患信息】
 my $i = 0;
-my @data_in;
-my %exp_id;
-my @TCA_id;
-my %exp_num;
-my %exp_seq;
-my %exp_error;
-my %together;
-my %identity;
-my %history;
+my @data_in;  # 保存输入 供患信息.txt 中每个实验的完整信息，共21列信息  【供患信息】
+my %exp_id;  # exp_id 哈希，存放每个实验编码的原始顺序  【供患信息】
+my @TCA_id;  # 将 报告单编号 存入数组 @TCA_id  【供患信息】
+my %exp_num;  # exp_num 一维哈希，保存每个 报告单编号 中包含几个 实验编码   【供患信息】
+my %exp_seq;  # 存储 报告单编号 对应的3/2/1份 实验编码 的先后顺序 (按 "术前患者", "术前供者"， "术后患者"，"术后供者")   【供患信息】
+my %exp_error;  # 记录报告单编号 是否存在 实验错误, 0:没问题; 1:有问题   【供患信息】
+my %together;  # %together 二维哈希，第一维是哈希，键是 报告单编号，第二维是列表，保存每个 报告单编号 对应的 实验编码   【供患信息】
+my %identity;  # 存储 报告单编号 与 患者编码的对应关系，如: TCA1710480 <=> HUN001胡琳   【供患信息】
+my %history;  # $history{$str[8]} = $#{$Chimerism{$identity{$str[8]}}}+1;  # 获取该 患者 在该医院总的检测次数   【供患信息】
 my $test = 0;
 my $error;
-my $InputLoaded = 0;
-my $SummaryLoaded = 0;
-my $ExpLoaded = 0;
+my $InputLoaded = 0;  # 标记 供患信息 是否读入： 1 已读入 / 0 未读入
+my $SummaryLoaded = 0;  # 标记 已有数据 是否读入： 1 已读入 / 0 未读入
+my $ExpLoaded = 0;  # 标记 下机数据 是否读入： 1 已读入 / 0 未读入
 
-my %HospitalName;
-my %HospitalAlias;
-my %region;
-my %ID;
-my %alias;
+# 1省份   2医院编码   3医院全称   4医院别名1  5医院别名2  ...
+# 示例如下：
+#  安徽	AH002	安徽医科大学第一附属医院	安医附院	安医附一   ########
+my %region;         # 医院全称 及 对应省份,例如： 安徽医科大学第一附属医院 <=> 安徽   【.HospitalTrans.txt】
+my %ID;             # 医院全称 及 对应的编号,例如：安徽医科大学第一附属医院 <=> AH002   【.HospitalTrans.txt】
+my %alias;          # 别名 及其对应的 医院全称,例如：安医附院 <=> 安徽医科大学第一附属医院   【.HospitalTrans.txt】
+                    #                             安医附一 <=> 安徽医科大学第一附属医院   【.HospitalTrans.txt】
 
 my $DOS = Win32::GUI::GetPerlWindow();
-Win32::GUI::Hide($DOS);
+Win32::GUI::Hide($DOS);  # 隐藏后台运行的  console window  ** 测试时考虑不隐藏，一边检查 log **
 
 # if ($dateXXX > $TrialLim){
         # $error = '测试版本，试用期至'.$TrialLim.'
-# 请联系yewei@catb.org.cn';
+# 请联系ct@gzjrkbio.com';
         # Win32::MsgBox ($error, 0, "已过期");
         # exit(0);
 # }
 
 # $error = '此版本可能存在错误，仅供测试使用
-# 任何问题和建议请联系yewei@catb.org.cn
+# 任何问题和建议请联系ct@gzjrkbio.com
 # 是否继续？';
 
 # my $goon = Win32::MsgBox ($error, 4, "声明");
 
 # exit(0) if $goon == 7;
 
-my %allele;
-my %PrevAllele;
+my %allele;  # 将 已有数据 (型别汇总) 及 下机数据 中 每个 实验编码 的每个marker 对应的型别信息，存入 %allele  【已有数据(型别汇总)】
+my %PrevAllele;  # 保存 已有数据 (型别汇总) 每个 实验编码 的每个marker 对应的 型别信息  【已有数据(型别汇总)】
 my $curr_index;
 
-my %ThisAllele;
-my %area;
-my %trans; #用来保存实验编码缩写到全称的转换
+my %ThisAllele;  # 存放 下机数据 中该 实验编码 该marker 对应的型别信息  【下机数据】
+my %area;  # 存放 下机数据 中该 实验编码 该marker 对应的 area信息
+my %trans; # 用来保存 下机数据 中该 实验编码 缩写 到 全称 的转换
 
+# 定义STR检测的位点编号
 my @markers = ('D8S1179','D21S11','D7S820','CSF1PO','D3S1358','D5S818','D13S317','D16S539','D2S1338','D19S433','VWA','D12S391','D18S51','Amel','D6S1043','FGA');
-my %markerExist;
+my %markerExist;  # 使用hash表 存放 marker名， 以方便方便检查 marker是否存在
 foreach (@markers){
         $markerExist{$_} = 'yes',
 }
 
+# 定义供患信息表格的表头
 my @headers = ('收样日期', '生产时间', '移植日期', '样品类型', '样品性质', '分选类别', '采样日期', '实验编码', '报告单编号', '姓名', '供患关系', '性别', '年龄', '诊断', '亲缘关系', '关联样本编号', '医院编码', '送检医院', '送检医生', '住院号', '床号');
 
-my $InputSample_str = "未选择";
-my $ThisExp_str = "未选择";
-my $PrevExp_str = "未选择";
-my $Output_Dir = "未选择";
-my $Output_rpt_str = "未选择";
-my $Output_calc_str = "未选择";
+my $InputSample_str = "未选择";  # 获取选中文件的文件名 (见L568, $tmpfilename)  【List1_DblClick 函数: "供患信息" 列表框中文件双击时调用的处理函数】
+my $PrevExp_str = "未选择";  # 获取选中文件的文件名字  【List2_DblClick 函数: "已有数据" 部分的列表框中双击时的处理函数】
+my $Output_Dir = "未选择";  # 获取生成报告的文件夹  【RUN_Click 函数: "生成报告" 按钮 点击 时的处理函数】
+my $Output_rpt_str = "未选择";  # 生成报告文件的名称
 
-my $output_name;
+my @InputFound;  # 表头合格的文件，文件名存入数组 @InputFound  【供患信息】
+my @PrevFound;  # 表头合格的文件，文件名存入数组 @PrevFound  【已有数据(型别汇总)】
+my @InputList;  # 使用 Shorten 函数，将文件名截断后，存入数组 @InputList  【供患信息】
+my @PrevList;  # 使用 Shorten 函数，将文件名截断后，存入数组 @PrevList  【已有数据(型别汇总)】
+my @ThisFound;  # 将选中的 下机数据.txt 文件名 存入 @ThisFound  【下机数据】
+my @ThisList;  # 调用 Shorten函数截短输入文件名，同时 存入 @ThisList  【下机数据】
 
-my @InputFound;
-my @PrevFound;
-my @InputList;
-my @PrevList;
-my @ThisFound;
-my @ThisList;
-
+################# 配置文件读取部分 ###############################
+# 定义配置文件 TCAconfig.ini 中关键字名称
 my @ConfigList = ("InputLoc", "SummaryLoc", "ThisLoc", "OutputLoc");
 my %ConfigHash;
 
-foreach (@ConfigList){
-                $ConfigHash{$_} = $pwd;
+# 设置 "InputLoc", "SummaryLoc", "ThisLoc", "OutputLoc" 默认值为 $pwd, 见Line27-28
+foreach (@ConfigList){ my $tmp = $_ ; print "L113:" . $tmp . "\n";
+                $ConfigHash{$tmp} = $pwd; print "L114:" . $ConfigHash{$tmp} ."\n";
 }
 
-&ReadConfig;
+&ReadConfig;  # 读取 TCAconfig.ini 文件
+################# 配置文件读取完成 ###############################
 
+################# UI部分设置开始 ###############################
+################## 设置软件的主界面 ############################
 my $main = Win32::GUI::Window->new(
         -name => 'Main',
         -text => $version,
         -width => 570,
-    -height => 500,
+        -height => 500,
         -pos => [200, 200],
         -sizabke => 0,
         -resizable => 0,
@@ -131,20 +134,21 @@ my $font = Win32::GUI::Font->new(
         -color => 0x0000FF,
 );
 
-my $sb = $main->AddStatusBar();
+my $sb = $main->AddStatusBar();  # 添加状态条?
 
-my $text11 = $main->AddLabel(
+################## 定义软件界面上的 供患信息 部分 ##########################
+my $text11 = $main->AddLabel(  # 定义 "供患信息" 名称
         -text => '供患信息',
         -pos => [10, 10],
         -font => $font,
 );
 
-my $text12 = $main->AddLabel(
+my $text12 = $main->AddLabel(  # 定义 "供患信息" 下方的 "已找到"
         -text => '已找到',
         -pos => [10, 45],
 );
 
-my $Input1 = $main-> AddListbox(
+my $Input1 = $main-> AddListbox(  # 定义 "供患信息" 部分的列表框
         -name => "List1",
         -left => 10,
         -top => 60,
@@ -154,35 +158,36 @@ my $Input1 = $main-> AddListbox(
         -vscroll => 1,
 );
 
-my $open1 = $main->AddButton(
+my $open1 = $main->AddButton(  # 定义 "供患信息" 部分列表框下方的 "其他位置" 按钮
         -name => "Open1",
         -text => "其他位置...",
         -pos  => [ 10, 130 ],
 );
 
-my $text14 = $main->AddLabel(
+my $text14 = $main->AddLabel(  # 定义 "供患信息" 部分的 "双击读取" 提示信息
         -pos => [140, 135],
         -text => '↑双击读取',
 );
 
-my $text13 = $main->AddLabel(
+my $text13 = $main->AddLabel(  # 定义 "供患信息" 部分的 "尚未读取" 提示信息
         -pos => [10, 155],
         -width => 250,
         -text => '尚未读取',
 );
 
-my $text21 = $main->AddLabel(
+################## 定义软件界面上的 已有数据 部分 ##########################
+my $text21 = $main->AddLabel(  # 定义 "已有数据" 名称
         -text => '已有数据',
         -pos => [300, 10],
         -font => $font,
 );
 
-my $text22 = $main->AddLabel(
+my $text22 = $main->AddLabel(  # 定义 "已有数据" 名称下方的 "已找到"提示
         -text => '已找到',
         -pos => [300, 45],
 );
 
-my $Input2 = $main-> AddListbox(
+my $Input2 = $main-> AddListbox(  # 定义 "已有数据" 部分的列表框
         -name => "List2",
         -left => 300,
         -top => 60,
@@ -192,95 +197,58 @@ my $Input2 = $main-> AddListbox(
         -vscroll => 1,
 );
 
-my $open2 = $main->AddButton(
+my $open2 = $main->AddButton(  # 定义 "已有数据" 部分列表框下方的 "其他位置" 按钮
         -name => "Open2",
         -text => "其他位置...",
         -pos  => [ 300, 130 ],
 );
 
-my $text24 = $main->AddLabel(
+my $text24 = $main->AddLabel(  # 定义 "已有数据" 部分列表框下方的 "双击读取" 提示信息
         -pos => [430, 135],
         -text => '↑双击读取',
 );
 
-my $text23 = $main->AddLabel(
+my $text23 = $main->AddLabel(  # 定义 "已有数据" 部分列表框下方的 "尚未读取" 提示信息
         -pos => [300, 155],
         -width => 250,
         -text => '尚未读取',
 );
 
-my $display2 = $main->AddButton(
+################## 定义软件界面上的 打印已有分型 部分 ##########################
+my $display2 = $main->AddButton(  # 定义 "打印已有分型" 按钮
         -name => "DISPLAY2",
         -text => "打印已有分型",
         -pos  => [ 10, 180 ],
         -size => [ 545 , 30],
-        -disabled => 1,
+        -disabled => 1,  # 设置默认为不可点击，仅在供患信息 及 已有数据读取完成后，变为可点击状态
 );
 
-# my $dpwindow = new Win32::GUI::Window (
-        # -name  => "W2",
-        # -title => "查看已有分型",
-        # -pos   => [ 300, 300 ],
-        # -size  => [ 400, 700 ],
-        # -parent => $main,
-        # -sizabke => 0,
-        # -resizable => 0,
-# );
-# my $Grid = new Win32::GUI::Grid (
-    # -parent  => $dpwindow,
-    # -name    => "Grid",
-    # -pos     => [0, 0],
-# ) or die "new Grid";
-
-# $Grid->SetEditable(0);
-# $Grid->SetRows(18);
-# $Grid->SetColumns(3);
-# $Grid->SetFixedRows(1);
-# $Grid->SetFixedColumns(1);
-
-# my $w2_prev = $dpwindow->AddButton(
-        # -name => "W2_PREV",
-        # -text => "上一个",
-        # -pos  => [ 50, 600 ],
-# );
-
-# my $w2_next = $dpwindow->AddButton(
-        # -name => "W2_NEXT",
-        # -text => "下一个",
-        # -pos  => [ 150, 600 ],
-# );
-
-# my $w2_close = $dpwindow->AddButton(
-        # -name => "W2_CLOSE",
-        # -text => "关闭",
-        # -pos  => [ 250, 600 ],
-# );
-
-my $open3 = $main->AddButton(
+################## 定义软件界面上的 添加下机数据 部分 ##########################
+my $open3 = $main->AddButton(  # 定义 "添加下机数据" 按钮
         -name => "Open3",
         -text => "添加下机数据",
         -pos  => [ 10, 220 ],
         -size => [ 100, 30 ],
-        -disabled => 1,
+        -disabled => 1,  # 设置默认为不可点击，仅在打印已有分型完成后，变为可点击
 );
 
-my $del3 = $main->AddButton(
+my $del3 = $main->AddButton(  # 定义 "移除" 按钮
         -name => "Del3",
         -text => "移除",
         -pos  => [ 80, 250 ],
         -size => [ 30, 20 ],
-        -disabled => 1,
+        -disabled => 1,  # 设置默认为不可点击，仅在 "添加下机数据"? 完成后，变为可点击
 );
 
-my $Read3 = $main->AddButton(
+my $Read3 = $main->AddButton(  # 定义 "读取" 按钮
         -name => "Read3",
         -text => "读取",
         -pos  => [ 500, 221 ],
         -size => [ 50, 50 ],
-        -disabled => 1,
+        -disabled => 1,  # 设置默认为不可点击，仅在 "添加下机数据"? 完成后，变为可点击
 );
 
-my $Input3 = $main-> AddListbox(
+my $Input3 = $main-> AddListbox(  # 定义 "添加下机数据" 部分的列表框
         -name => "List3",
         -left => 120,
         -top => 220,
@@ -292,39 +260,39 @@ my $Input3 = $main-> AddListbox(
         -disabled => 1,
 );
 
-my $text3 = $main->AddLabel(
+my $text3 = $main->AddLabel(  # 定义 "添加下机数据" 列表框下方"尚未读取"提示信息
         -text => "尚未读取",
         -pos => [120, 280],
 );
 
-my $sep = $main-> AddLabel(
+################## 定义软件界面上的 添加下机数据 下方的分隔线 部分 ##########################
+my $sep = $main-> AddLabel(  # 在"添加下机数据"部分下方添加分隔线
         -text =>"==============================================================================================================================",
         -pos => [0,300],
 );
 
-my $run4 = $main->AddButton(
+################## 定义软件界面上的 生成报告 部分 ##########################
+my $run4 = $main->AddButton(  # 定义 "生成报告" 按钮
         -name => "RUN",
         -text => "生成报告",
         -font => $font,
         -pos  => [ 20, 320 ],
         -size => [160,60],
-        -disabled => 1,
+        -disabled => 1,  # 设置默认为不可点击，仅在 "添加下机数据" 完成后，变为可点击
 );
 
-my $RptBox = $main-> AddTextfield(
+my $RptBox = $main-> AddTextfield(  # 定义 "生成报告" 部分的文本框
         -name => "RptBox",
         -pos => [200, 310],
         -size => [350, 135],
-        -readonly => 1,
+        -readonly => 1,  # 设置为只读
         -multiline => 1,
         -vscroll => 1,
         -autovscroll => 1,
         -autohscroll => 0,
 );
 
-# my $dpsb2 = $dpwindow->AddStatusBar();
-
-my $RUNwindow = new Win32::GUI::Window (
+my $RUNwindow = new Win32::GUI::Window (  # 定义点击"生成报告"按钮后出现的新的提示界面
         -name  => "RUNWindow",
         -title => "正在生成文件，请稍候...",
         -pos   => [ 300, 300 ],
@@ -334,28 +302,25 @@ my $RUNwindow = new Win32::GUI::Window (
         -resizable => 0,
 );
 
-my $quit = $main->AddButton(
+my $quit = $main->AddButton(  # 定义 "退出" 按钮
         -name => "QUIT",
         -text => "退出",
         -pos  => [ 20, 420 ],
         -size => [ 60,20],
 );
 
-my $copybutton = $main -> AddButton(
+my $copybutton = $main -> AddButton(  # 定义 "复制" 按钮
         -name => "COPY",
         -text => "复制",
         -pos  => [120, 420],
         -size => [ 60,20],
 );
 
-# my $checkbox => $main -> AddCheckbox(
-        # -name => "UseHuatuo",
-        # -pos  => [20, 390],
-# );
+my $direct = 1;  ## 意义未名
+$main->Show();  # 显示软件界面
+################# UI部分设置完成 ###############################
 
-my $direct = 1;
-$main->Show();
-
+################# 读取医院信息 .HospitalTrans.txt ##############
 $sb -> Text('正在读取医院信息');
 unless (open IN,".HospitalTrans.txt"){
         $error = "未找到医院信息
@@ -364,17 +329,26 @@ unless (open IN,".HospitalTrans.txt"){
         exit(0);
 }
 <IN>;
+# .HospitalTrans.txt 的格式如下 ###################################
+# 1省份   2医院编码   3医院全称   4医院别名1  5医院别名2  ...
+# 示例如下：
+#  安徽	AH002	安徽医科大学第一附属医院	安医附院	安医附一   ########
+# 特别说明： 1) 不带表头; 2)字段间以TAB分隔 ##########################
 while(<IN>){
         my @str = split;
-        $region{$str[2]} = $str[0];
-        $ID{$str[2]} = $str[1];
-        while ($#str > 2){
-                my $tmp = pop @str;
-                $alias{$tmp} = $str[2];
+        $region{$str[2]} = $str[0];  # 将医院全称及对应省份，保存到 %region
+        $ID{$str[2]} = $str[1];  # 将医院全称及对应的编号，保存到 %ID
+
+        while ($#str > 2){  # $#str:读取 @str最后一个元素的索引。等价于 @str >3。如果医院存在别名信息，则读取并保存到 %alias
+          #### 遍历读取所有医院的别名，并将别名对应的医院全称对应关系，保存到 %alias
+                my $tmp = pop @str;  # 从最右边的别名开始读取
+                $alias{$tmp} = $str[2];  # 将别名 及其对应的 医院全称，保存到 %alias
         }
 }
 close IN;
+################# 读取医院信息完成 ################################
 
+################# 读取已有样本信息 .PrevSamples.txt ###############
 $sb -> Text('正在检查必需文件');
 unless (-e ".PrevSamples.txt"){
         $error = "未找到已有样本信息
@@ -385,28 +359,37 @@ unless (-e ".PrevSamples.txt"){
 open IN,".PrevSamples.txt";
 <IN>;
 
+# .PrevSamples.txt 的格式如下 ##############################################################################################################################################################################################################
+# 0区域 1快递单号 2 3 4采样日期 5收样日期 6移植日期 7样品数量 8样品类型 9样品性质 10样本编号 11报告单编号 12姓名 13供患关系 14性别 15年龄 16诊断 17亲缘关系 18关联样本编号 19医院编码 20送检医院 21送检医生 22邮寄报告地址 23邮寄报告地址
+# 示例如下：
+#  区域	快递单号			采样日期	检测日期	移植日期	样品数量	样品类型	样品性质	样本编号	报告单编号	姓名	供患关系	性别	年龄	诊断	亲缘关系	关联样本编号	医院编码	送检医院	送检医生	邮寄报告地址	邮寄报告地址	月份	合并数据	样品类型	状态
+# 湖南	不详				2017/7/1		[1 管  2 毫升 ]	骨髓-T细胞分选	术后	STR1708646-T	TCA1710480	胡琳	患者	女	17		胡琳	本人	HUN001	中南大学湘雅医院				7	HUN001胡琳术后	骨髓-T细胞分选	术后
+# 湖南	不详				2017/7/1		[1 管  2 毫升 ]	骨髓-T细胞分选	术后	STR1708647-T	TCA1710481	周长新	患者	男	42		周长新	本人	HUN001	中南大学湘雅医院				7	HUN001周长新术后	骨髓-T细胞分选	术后
+# 甘肃	8.24E+11			2017/6/29	2017/7/1		[2 管 2毫升]	全血	术后	STR1708648	TCA1710482	尹进龙	患者	男	13		尹进龙	本人	GS002	兰州军区总院	郭医生			7	GS002尹进龙术后	全血	术后
+# 特别说明： 1) 带表头; 2) 快递单号 与 采样日期间空2列; 3)字段间以TAB分隔 ########################################################################################################################################################################
 while(<IN>){
         chomp;
         my @str = split /\t/, $_;
-# 0区域 1快递单号 2 3 4采样日期 5收样日期 6移植日期 7样品数量 8样品类型 9样品性质 10样本编号 11报告单编号 12姓名 13供患关系 14性别 15年龄 16诊断 17亲缘关系 18关联样本编号 19医院编码 20送检医院 21送检医生 22邮寄报告地址 23邮寄报告地址
-        next unless $str[10];
-        next unless $str[11];
-        next unless $str[12];
-        next unless $str[19];
+        next unless $str[10];  # 跳过"样本编号"为空的行
+        next unless $str[11];  # 跳过"报告单编号"为空的行
+        next unless $str[12];  # 跳过"姓名"为空的行
+        next unless $str[19];  # 跳过"医院编码"为空的行
 
-        my $Smplid = $str[10];
-        $sampleDate{$Smplid} = $str[4]? $str[4]:'不详';
-        $sampleDate{$Smplid} = DateUnify($sampleDate{$Smplid});
-        $receiveDate{$Smplid} = $str[5]? $str[5]:'不详';
-        $receiveDate{$Smplid} = DateUnify($receiveDate{$Smplid});
-        $sampleType{$Smplid} = $str[8];
+        my $Smplid = $str[10];  # 读取"样本编号"
+        $sampleDate{$Smplid} = $str[4]? $str[4]:'不详';  # 读取"采样日期"，若为空，则设置为"不详"，并将"样本编号"对应的"采样日期"存入 %sampleDate
+        $sampleDate{$Smplid} = DateUnify($sampleDate{$Smplid});  # 使用DateUnify函数，调整日期格式
+        $receiveDate{$Smplid} = $str[5]? $str[5]:'不详';  # 读取"收样日期"，若为空，则设置为"不详"，并将"样本编号"对应的"收样日期"存入 %receiveDate
+        $receiveDate{$Smplid} = DateUnify($receiveDate{$Smplid});  # 使用DateUnify函数，调整日期格式
+        $sampleType{$Smplid} = $str[8];  # 读取"样本类型"，并将"样本编号"对应的"样本类型"存入 %sampleType  （********* 样本编号 对应 供患信息 中的 实验编码，前后最好统一起来 ***********）
 }
 
 # print "STR1610506 Sample: ", $sampleDate{STR1610506},"\n";
 # print "STR1610506 Recieve:", $receiveDate{STR1610506},"\n";
 
 close IN;
+################# 读取已有样本信息完成 ################################
 
+################# 读取已有样本嵌合率结果 .PrevChimerism.txt ###############
 unless (-e ".PrevChimerism.txt"){
         $error = "未找到已有嵌合率信息
 请检查或重新解压安装包！";
@@ -416,37 +399,57 @@ unless (-e ".PrevChimerism.txt"){
 
 open IN,".PrevChimerism.txt";
 <IN>;
+
+# .PrevChimerism.txt 的格式如下 ##############################################################################################################################################################################################################
+# 0报告编号        1患者姓名        2实验编码        3相关供者/报告        4嵌合率        5报告日期        6医院编号        7医院全称        8备注        9样本类型        10样品性质
+# 示例如下：
+# 报告编号	患者姓名	实验编码	相关供者/报告	嵌合率	报告日期	医院编号	医院全称	备注	样本类型	样品性质		检测次数
+# TCA1710480	胡琳	STR1708646-T		99.73%		HUN001	中南大学湘雅医院		T细胞分选	术后	HUN001胡琳术后	14
+# TCA1710500	林弦	STR1708661-T		71.04%		GD004	广州市第一人民医院		T细胞分选	术后	GD004林弦术后	9
+# TCA1710501	林弦	STR1708661		93.56%		GD004	广州市第一人民医院		骨髓血	术后	GD004林弦术后	9
+# TCA1710502	俞歆悦	STR1708571		99.71%		ZJ002	浙江省儿童医院		骨髓血	术后	ZJ002俞歆悦术后	10
+# TCA1710503	蔡娇珍	STR1708677-B		81.02%		GD024	广东医科大学附属医院		B细胞分选	术后	GD024蔡娇珍术后	24
+# TCA1710504	蔡娇珍	STR1708675		81.60%		GD024	广东医科大学附属医院		全血	术后	GD024蔡娇珍术后	24
+# TCA1710505	蔡娇珍	STR1708676-T		86.03%		GD024	广东医科大学附属医院		T细胞分选	术后	GD024蔡娇珍术后	24
+# TCA1710506	蔡娇珍	STR1708678-NK		77.20%		GD024	广东医科大学附属医院		NK细胞分选	术后	GD024蔡娇珍术后	24
+# 特别说明： 1)带表头; 2)样本性质与检测次数间有一列无列名字; 3)字段间以TAB分隔 ########################################################################################################################################################################
 while (<IN>){
         chomp;
-#0报告编号        1患者姓名        2样本编号        3相关供者/报告        4嵌合率        5报告日期        6医院编号        7医院全称        8备注        9样本类型        10样品性质
         my @str = split /\t/, $_;
-        next unless $str[4] =~ /\d+(\.\d+)?%/;
-        next unless $str[2];
-        next unless $str[1];
-        next if $str[7] =~ /N\/A/;
-        next unless $str[7];
-        next if $str[7] eq '作废';
-        next unless $str[6];
+        next unless $str[4] =~ /\d+(\.\d+)?%/;  # 跳过嵌合率不为百分比格式的行（包括不存在或格式不对的行）
+        next unless $str[2];  # 跳过 "样本编号" 不存在的行
+        next unless $str[1];  # 跳过 "患者姓名" 不存在的行
+        next if $str[7] =~ /N\/A/;  # 跳过 "医院全称" 为 N/A 的行
+        next unless $str[7];  # 跳过 "医院全称" 不存在的行
+        next if $str[7] eq '作废';  # 跳过 "医院全称" = '作废' 的行
+        next unless $str[6];  # 跳过 "医院编号" 不存在的行
 
+        # 判断 "医院全称" 对应的 "医院编号" 在 已有医院信息(.HospitalTrans.txt) 中是否存在
         if (exists $ID{$str[7]}){
-                $str[6] = $ID{$str[7]};
-        }elsif(exists $alias{$str[7]}){
-                my $tmp = $alias{$str[7]};
-                $str[6] = $ID{$tmp};
-                $str[7] = $tmp;
+                $str[6] = $ID{$str[7]};  # 存在, 根据已有医院信息，重新设置 "医院编号"
+        }elsif(exists $alias{$str[7]}){  # 判断 "医院全称" （为别名）对应的 "医院全称" 在 已有医院信息(.HospitalTrans.txt) 中是否存在
+                my $tmp = $alias{$str[7]};  # 存在，则获取 "医院别名" 对应的 "医院全称"
+                $str[6] = $ID{$tmp};  # 根据已有医院信息，重新设置 "医院编号"
+                $str[7] = $tmp;  # 根据已有医院信息，重新设置 "医院全称"
         }
 
-        my $tmp = $str[6].$str[1];
-        push @{$Chimerism{$tmp}}, $str[4];
-        push @{$SampleID{$tmp}}, $str[2];
-        $HasChimerism{$str[2]} = $tmp;
-        if ($str[5]){
-                push @{$ReportDate{$tmp}}, DateUnify($str[5]);
-        }else{
-                push @{$ReportDate{$tmp}}, "不详";
+        my $tmp = $str[6].$str[1];  # 如: HUN001胡琳  (构建每个患者的唯一编码, 医院编号+姓名)
+        push @{$Chimerism{$tmp}}, $str[4];  # 数组里每一个元素都是 hash表，用于存储每个 患者编码 对应的每次检测的 嵌合率 结果
+        push @{$SampleID{$tmp}}, $str[2];  # 数组里每一个元素都是 hash表，用于存储每个 患者编码 对应的每次检测的 实验编码
+        $HasChimerism{$str[2]} = $tmp;  # 实验编码 与 患者编码的对应关系，如: STR1708646-T <=> HUN001胡琳
+
+        # 判断 "报告日期" 是否存在
+        if ($str[5]){  # 存在
+                push @{$ReportDate{$tmp}}, DateUnify($str[5]);  # 数组里每一个元素都是 hash表，用于存储每个患者编码对应的每次检测的报告日期。报告日期 使用 DateUnify函数处理。
+        }else{  # 不存在
+                push @{$ReportDate{$tmp}}, "不详";  # 数组里每一个元素都是 hash表，用于存储每个患者编码对应的每次检测的报告日期。报告日期 不存在，则该次检测的报告日期存储为 "不详"
         }
 }
 close IN;
+################# 读取已有样本嵌合率结果完成 ###############
+
+#############################################################
+################## 测试示例 ##########################
 # my $teststr = "FJ001刘亦杰";
 # $i = 0;
 # foreach (@{$Chimerism{$teststr}}){
@@ -470,77 +473,113 @@ close IN;
                 # $i ++;
         # }
 # }
+################## 测试示例 ##########################
+#############################################################
 
+################# 读取 InputLoc 目录下的 供患信息 文件 （只读取保存文件名） ###############
 #Looking for InputSample files
-my $temp = $ConfigHash{InputLoc};
-my @filelist = `dir /b $temp\\*.txt`;
+my $temp = $ConfigHash{InputLoc};  # 读取供患关系信息存放路径，来源为 TCAconfig.ini, InputLoc
+my @filelist = `dir /b $temp\\*.txt`; print "L476:" .$temp . "\n"; print "L476:" .@filelist. "\n";  # 读取 InputLoc下所有 txt文件，存储在 @filelist
 my $localnumber = 1;
 
+# 供患关系文件 的格式如下 ##############################################################################################################################################################################################################
+# 0收样日期	1生产时间	2移植日期	3样品类型	4样品性质	5分选类别	6采样日期	7实验编码	8报告单编号	9姓名	10供患关系	11性别	12年龄	13诊断	14亲缘关系	15关联样本编号	16医院编码	17送检医院	18送检医生  19住院号   20床号
+# 示例如下：
+# 收样日期	生产时间	移植日期	样品类型	样品性质	分选类别	采样日期	实验编码	报告单编号	姓名	供患关系	性别	年龄	诊断	亲缘关系	关联样本编号	医院编码	送检医院	送检医生  住院号   床号
+# 				术前			D19STR00039	QC-Q019	Q17	患者
+# 				术前			10751	QC-Q019		供者
+# 				术后			Q19	QC-Q019	Q19	患者							南京市儿童医院
+# 	2020/3/5		[其他]	术前		2020/3/3	D20STR01231	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人
+# 	2020/3/5		[其他]	术前		2020/3/3	D20STR01232	TCA2007498	吴文方	供者	男	44	-	弟弟
+# 2020/3/4	2020/3/5		骨髓血	术后		2020/3/3	D20STR01230	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人		广东省人民医院	黄励思
+# 	2018/6/8		全血	术前			STR1808282	TCA2007647	杨梅月	患者	女	不详		杨梅月	本人
+# 	2018/6/8		全血	术前			STR1810793	TCA2007647	杨梅	供者	女	不详		姐姐
+# 特别说明： 1)带表头; 2)字段间以TAB分隔; 3) 文件扩展名需要 ".txt" #################################################################################################################################################################################################
+# 遍历每个txt文件
 foreach (@filelist){
         chomp;
-        my $tmpfilename = $temp."\\".$_;
-        $sb -> Text("正在读取本地文件".substr('.....', 0,($localnumber++)%5+1));
-        next if /^\./;
-        (open IN ,$tmpfilename) || next;
-        my $str = <IN>;
-        next unless $str;# in case of empty file.
+        my $tmpfilename = $temp."\\".$_; print "L481:" .$tmpfilename . "\n";  # 获得txt文件对应的完整路径名
+        $sb -> Text("正在读取本地文件".substr('.....', 0,($localnumber++)%5+1));  # 输出状态信息
+        next if /^\./;  # 跳过 InputLoc 下的 .
+        (open IN ,$tmpfilename) || next;  # 打开文件，打不开则跳到下一个文件
+        my $str = <IN>;  # 读取文件的表头行
+        next unless $str;  # in case of empty file. 跳过空文件
         chomp $str;
         close IN;
-#0生产时间        1移植日期        2样品数量        3样品类型        4样品性质        5分选类别        6采样日期        7实验编码        8报告单编号        9姓名        10供患关系        11性别        12年龄        13诊断        14亲缘关系        15关联样本编号        16医院编码        17送检医院        18送检医生
         my $yes = 1;
-        my @tmp = split /\t/, $str;
-        next if @tmp != 19;
-        foreach my $i(0..18){
-                $yes = 0 if $tmp[$i] ne $headers[$i];
-        }
-        next if $yes != 1;
-        push @InputFound, $tmpfilename;
-        push @InputList, &Shorten($tmpfilename, 39);
+        my @tmp = split /\t/, $str; print "L491:" . @tmp . "\n" ;
+        # next if @tmp != 19;  # 若表头不是19列，则跳过该文件
+        next if @tmp != 21;  # 若表头不是21列，则跳过该文件 （与List1_DblClick中格式保持一致）
+        # 判断表头的前19个列名与 @headers 前19列是否完全一致，若存在不一致，则将 $yes = 0
+        foreach my $i(0..20){ print "L493:".$tmp[$i]."\t".$headers[$i]."\n";  # 与List1_DblClick中格式保持一致，将 0..18 修改为 0..20
+                $yes = 0 if $tmp[$i] ne $headers[$i];  # @headers = ('收样日期', '生产时间', '移植日期', '样品类型', '样品性质', '分选类别', '采样日期', '实验编码', '报告单编号', '姓名', '供患关系', '性别', '年龄', '诊断', '亲缘关系', '关联样本编号', '医院编码', '送检医院', '送检医生', '住院号', '床号');
+        } print "L495:".$yes."\n";
+        next if $yes != 1;  # 跳过表头列名 与 @headers 前19列不完全一致的文件
+        push @InputFound, $tmpfilename;  # 表头合格的文件，文件名存入数组 @InputFound
+        push @InputList, &Shorten($tmpfilename, 39);  # 使用 Shorten 函数，将文件名截断后，存入数组 @InputList
 }
 ####
+$Input1 -> Add(@InputList);  # 将@InputList中存储的截断文件名显示到 "供患信息" 部分的列表框中
+################# 读取 InputLoc 目录下的 供患信息文件 完成 ###############
 
-$Input1 -> Add(@InputList);
-
+################# 读取 SummaryLoc 目录下的 已有型别汇总文件 （只读取保存文件名） ###############
+# 已有数据文件（型别汇总） 的格式如下 ##############################################################################################################################################################################################################
+# 0	1Marker1	2Marker2	3Marker3	4Marker4	5Marker5	6Marker6	7Marker7	8Marker8	9Marker9	10Marker10	11Marker11	12Marker12	13Marker13	14Marker14	15Marker15	16Marker16 ... 25Marker25
+# 示例如下：
+# 	D8S1179	D21S11	D7S820	CSF1PO	D3S1358	D5S818	D13S317	D16S539	D2S1338	D19S433	VWA	D12S391	D18S51	Amel	D6S1043	FGA
+# DT2000011	13、16	29、32.2	8、11	11	16	10	11	12			14、19		13、14	X		21、23
+# DT2000012	10、13	30	11	10、12	15、17	11	10、11	12			17、18		16	X、Y		22、25
+# DT2000007	11、15	30、32.2	11、12	11、12	15、17	7、10	8	11、13			17、19		15、16	X、Y		21、24
+# 特别说明： 1)带表头; 2)字段间以TAB分隔; 3) 文件扩展名需要 ".txt" #################################################################################################################################################################################################
 #Looking for Previous Results files
-$temp = $ConfigHash{SummaryLoc};
-@filelist = `dir /b $temp\\*.txt`;
+$temp = $ConfigHash{SummaryLoc}; print "L505:" . $temp . "\n";  # 读取已有数据信息存放路径，来源为 TCAconfig.ini, SummaryLoc
+@filelist = `dir /b $temp\\*.txt`;  # 读取 SummaryLoc 下所有 txt文件，存储在 @filelist
 $localnumber = 1;
 foreach (@filelist){
         chomp;
-        my $tmpfilename = $temp."\\".$_;
-        $sb -> Text("正在读取本地文件".substr('.....', 0,($localnumber++)%5+1));
-        next if /^\./;
-        (open IN ,$tmpfilename) or next;
-        my $str = <IN>;
-        next unless $str;# in case of empty file.
+        my $tmpfilename = $temp."\\".$_; print $tmpfilename . "\n";  # 获得txt文件对应的完整路径名
+        $sb -> Text("正在读取本地文件".substr('.....', 0,($localnumber++)%5+1));  # 输出状态信息
+        next if /^\./;  # 跳过 SummaryLoc 下的 . (了解以下linux下的ll)
+        (open IN ,$tmpfilename) or next;  # 打开文件，打不开则跳到下一个文件
+        my $str = <IN>;  # 读取文件的表头行
+        next unless $str;  # in case of empty file. 跳过空文件
         chomp $str;
         close IN;
 
         my $yes = 1;
         my @tmp = split /\t/, $str;
-        next if @tmp != 17;
-        foreach my $i(1..16){
+        next if @tmp != 17;  # 若表头超过17列，则跳过该文件  (需要修改为26，已支持JRK的25个marker)
+
+        # 判断表头的列名 （marker名字）在 %markerExist 中是否存在，若有 %markerExist中没有的marker名，则将 $yes = 0
+        foreach my $i(1..16){  # 需要修改为 1..25，已支持JRK的25个marker；同时 %markerExist需要更新为25 marker
                 $yes = 0 unless exists $markerExist{$tmp[$i]};
         }
-        next if $yes != 1;
-        push @PrevFound, $tmpfilename;
-        push @PrevList, &Shorten($tmpfilename, 39);
+        next if $yes != 1;  # 表头中存在 %markerExist中没有的marker名，则跳过该文件
+        push @PrevFound, $tmpfilename;  # 表头合格的文件，文件名存入数组 @PrevFound
+        push @PrevList, &Shorten($tmpfilename, 39);  # 使用 Shorten 函数，将文件名截断后，存入数组 @PrevList
 }
 ####
-$Input2 -> Add(@PrevList);
-$sb -> Text('');
+$Input2 -> Add(@PrevList);  # 将@InputList中存储的截断文件名显示到 "已有数据" 部分的列表框中
+$sb -> Text('');  # 将状态信息清空
+################# 读取 SummaryLoc 目录下的 已有型别汇总文件 完成 ###############
 
-Win32::GUI::Dialog();
-Win32::GUI::Show($DOS);
+Win32::GUI::Dialog();  # 这句话是让窗口一直待机的一个循环，等待用户操作这个窗口
+Win32::GUI::Show($DOS);  # my $DOS = Win32::GUI::GetPerlWindow();
 
 exit(0);
 
+#################################################################
+# Main_Terminate 函数:主界面退出时, 调用 WriteConfig 函数           #
+#################################################################
 sub Main_Terminate {
 
         &WriteConfig;
         return -1;
 }
 
+#################################################################
+# List1_DblClick 函数: "供患信息" 列表框中文件双击时调用的处理函数     #
+#################################################################
 sub List1_DblClick{
         if (@exp_list){
 
@@ -552,110 +591,109 @@ sub List1_DblClick{
         }
 
         $InputLoaded = 0;
-        $display2->Enable($InputLoaded*$SummaryLoaded);
-        $open3->Enable($InputLoaded*$SummaryLoaded);
+        $display2->Enable($InputLoaded*$SummaryLoaded);  # 在读取完 供患信息 文件名 及 已有数据 文件名后，将 "打印已有分型" 按钮，设置为"可点击"状态
+        $open3->Enable($InputLoaded*$SummaryLoaded);  # 在读取完 供患信息 文件名 及 已有数据 文件名后，将 "添加下机数据" 按钮，设置为"可点击"状态
 
         $error = "尚未读取";
-        $text13 -> Text($error);
+        $text13 -> Text($error);  # 将"供患信息" 部分的 "尚未读取" 提示信息设置为 "尚未读取"
 
-        my $sel = $Input1->GetCurSel();
-        $InputSample_str = $InputFound[$sel];
+        my $sel = $Input1->GetCurSel();  print "L667:" . $sel . "\n"; # 获取 "供患信息" 列表框中选中文件的下标
+        $InputSample_str = $InputFound[$sel];  # 获取选中文件的文件名 (见L568, $tmpfilename)
 
-        unless (open IN,$InputSample_str){
+        unless (open IN,$InputSample_str){  # 打开选中的文件
                 $error = "文件打开失败！\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return 0;
         }
-        #0生产时间   1移植日期   2样品数量   3样品类型   4样品性质   5分选类别   6采样日期   7实验编码   8报告单编号   9姓名   10供患关系   11性别   12年龄   13诊断   14亲缘关系   15关联样本编号   16医院编码   17送检医院   18送检医生  19住院号   20床号
-
         @exp_list = ();
         $i = 0;
-        @data_in = ();
+        @data_in = ();  # 保存输入 供患信息.txt 中每个实验的完整信息，共21列信息
         %exp_id = ();
         @TCA_id = ();
         %exp_num = ();
         %exp_seq = ();
         %exp_error = ();
-        %together = ();
+        %together = ();  # %together 二维哈希，第一维是哈希，键是 报告单编号，第二维是列表，保存每个 报告单编号 对应的 实验编码
         %history = ();
         $test = 0;
 
-        my $tmp = <IN>;
+        my $tmp = <IN>;  # 读取表头行
         chomp $tmp;
         #if error content
 
         my $yes = 1;
         my @tmp = split /\t/, $tmp;
-        $yes = 0 if @tmp != 21;
+        $yes = 0 if @tmp != 21;  # 若表头行不是21列，则 $yes = 0
         foreach $i(0..20){
-                $yes = 0 if $tmp[$i] ne $headers[$i];
+                $yes = 0 if $tmp[$i] ne $headers[$i]; # 判断表头列是否与 @headers 中一一对应
         }
 
-        if ($yes != 1){
+        if ($yes != 1){  # 文件表头与 @headers 不是完全一致，报错
                 $error = "这个文件貌似不对。表头应为：\n生产时间 移植日期 样品数量 样品类型 样品性质 分选类别 采样日期 实验编码\n报告单编号 姓名 供患关系 性别 年龄 诊断 亲缘关系 关联样本编号 医院编码\n送检医院 送检医生 住院号 床号\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return;
         }
 
+        # 遍历 供患信息.txt（前面已经读过表头行，这里从表头下一行开始读）
+        #0生产时间   1移植日期   2样品数量   3样品类型   4样品性质   5分选类别   6采样日期   7实验编码   8报告单编号   9姓名   10供患关系   11性别   12年龄   13诊断   14亲缘关系   15关联样本编号   16医院编码   17送检医院   18送检医生  19住院号   20床号
         while (<IN>){
                 chomp;
                 my @str = split /\t/, $_;
-                if ($str[7] eq ""){
+                if ($str[7] eq ""){  # 实验编码 为空，报错
                         $error = "FATAL!! 实验编码为空！\n";
                         Win32::MsgBox $error, 0, "错误！";
                         exit(0);
                 }
-                $str[7] =~ s/\s+//g;
-                if ($str[4] eq "" || $str[8] eq "" || $str[10] eq ""){
+                $str[7] =~ s/\s+//g;  # 去除 实验编码 中的空字符
+                if ($str[4] eq "" || $str[8] eq "" || $str[10] eq ""){  # 样品性质 / 报告单编号 / 供患关系 为空，报错，提示补充完整
                         $error =  "请补全样本信息（样品性质/报告单编号/供患关系）：".$str[7]."\n";
                         Win32::MsgBox $error, 0, "错误！";
                         exit(0);
                 }
-                $str[4] =~ s/\s+//g;
-                $str[8] =~ s/\s+//g;
-                $str[10] =~ s/\s+//g;
-                push @exp_list, $str[7]; #exp_list按InputSamples的顺序存放每一个实验编码
-                if (@TCA_id == 0 || $str[8] ne $TCA_id[-1]){
-                        push @TCA_id, $str[8];
+                $str[4] =~ s/\s+//g;  # 去除 样品性质 中的空字符
+                $str[8] =~ s/\s+//g;  # 去除 报告单编号 中的空字符
+                $str[10] =~ s/\s+//g;  # 去除 供患关系 中的空字符
+                push @exp_list, $str[7];  # 将 实验编码 存入数组 @exp_list
+                if (@TCA_id == 0 || $str[8] ne $TCA_id[-1]){  # 判断 @TCA_id 是否为空，或 报告单编号 不是 @TCA_id的最后一个
+                        push @TCA_id, $str[8];  # 将 报告单编号 存入数组 @TCA_id
                 }
 
                 $exp_id{$str[7]} = $i; #exp_id 哈希，存放每个实验编码的原始顺序
-                push @{$together{$str[8]}}, $str[7]; #together 二维哈希，第一维是哈希，键是报告编码，第二维是列表，保存每个报告编码对应的实验编码
-                $exp_num{$str[8]} = @{$together{$str[8]}}; #exp_num 一维哈希，保存每个TCA报告中包含几个样本编号
+                push @{$together{$str[8]}}, $str[7]; #together 二维哈希，第一维是哈希，键是 报告单编号，第二维是列表，保存每个 报告单编号 对应的 实验编码
+                $exp_num{$str[8]} = @{$together{$str[8]}}; #exp_num 一维哈希，保存每个 报告单编号 中包含几个 实验编码
 
                 ###检查新实验的数目####
+                #0生产时间   1移植日期   2样品数量   3样品类型   4样品性质   5分选类别   6采样日期   7实验编码   8报告单编号   9姓名   10供患关系   11性别   12年龄   13诊断   14亲缘关系   15关联样本编号   16医院编码   17送检医院   18送检医生  19住院号   20床号
                 if ($str[4] eq "术后" && $str[10] eq "患者"){
 
-                        if (exists $HasChimerism{$str[7]}){
-                                $error = "样本编号".$str[7]."(".$str[9].")已经存在嵌合率，
-本次将覆盖这条嵌合率信息";
-##注意是覆盖，所以后期要删掉这条信息
+                        if (exists $HasChimerism{$str[7]}){  # 判断 %HashChimerism (.PrevChimerism.txt) 中是否已有该 实验编码 对应的结果记录. # 样本编号 与 患者编码的对应关系，如: STR1708646-T <=> HUN001胡琳
+                                $error = "样本编号".$str[7]."(".$str[9].")已经存在嵌合率，本次将覆盖这条嵌合率信息";
+                                ##注意是覆盖，所以后期要删掉这条信息
                                 Win32::MsgBox $error, 0, "注意";
-                                my $tmp = $HasChimerism{$str[7]};
+                                my $tmp = $HasChimerism{$str[7]};  print "L740:" . $tmp ."\n"; # 获取该 实验编码 对应的 患者编码
                                 my $tmpNum;
-                                foreach (0 .. $#{$Chimerism{$tmp}}){
-                                        $tmpNum = $_ if ${$SampleID{$tmp}}[$_] eq $str[7];
-                                }
-                                @{$Chimerism{$tmp}} = &DelItem(@{$Chimerism{$tmp}}, $tmpNum);
-                                @{$SampleID{$tmp}} = &DelItem(@{$SampleID{$tmp}}, $tmpNum);
-                                @{$ReportDate{$tmp}} = &DelItem(@{$ReportDate{$tmp}}, $tmpNum);
+                                foreach (0 .. $#{$Chimerism{$tmp}}){  # 遍历该 患者编码 对应的所有每次检测
+                                        $tmpNum = $_ if ${$SampleID{$tmp}}[$_] eq $str[7];  # 获取当前次 实验编码 是 $SampleID{$tmp} 中的第几次实验
+                                } print "L744:" . $tmpNum . "\n";
+                                @{$Chimerism{$tmp}} = &DelItem(@{$Chimerism{$tmp}}, $tmpNum); # 删掉该 实验编码 在 %Chimerism 中的记录
+                                @{$SampleID{$tmp}} = &DelItem(@{$SampleID{$tmp}}, $tmpNum);  # 删掉该 实验编码 在 %SampleID 中的记录
+                                @{$ReportDate{$tmp}} = &DelItem(@{$ReportDate{$tmp}}, $tmpNum); # 删掉该 实验编码 在 %ReportDate 中的记录
                         }
-                        $test ++;
-                        unless ($str[17]){
-                                $history{$str[8]} = 0;
-                                $identity{$str[8]} = "NotFound";
+                        $test ++;  # 记录实验次数
+                        unless ($str[17]){  # 送检医院 为空
+                                $history{$str[8]} = 0;  ##################### 待补充
+                                $identity{$str[8]} = "NotFound";  ##################### 待补充
                         }else{
-                                my $hospital = $str[17];
-                                if (exists $ID{$hospital}){
-                                        $identity{$str[8]} = $ID{$hospital}.$str[9];
-                                }elsif(exists $alias{$hospital}){
-                                        my $tmp = $alias{$hospital};
-                                        $str[17] = $tmp;
-                                        $identity{$str[8]} = $ID{$tmp}.$str[9];
-                                }else{
+                                my $hospital = $str[17];  # 获取 送检医院
+                                if (exists $ID{$hospital}){  # 假设 "送检医院" 为 "医院全称"，判断是否在 .HospitalTrans.txt 中存在
+                                        $identity{$str[8]} = $ID{$hospital}.$str[9];  # 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                                }elsif(exists $alias{$hospital}){  # 假设 "送检医院" 为 "医院简称"，判断是否在 .HospitalTrans.txt 中存在
+                                        my $tmp = $alias{$hospital};  # 获取 "医院简称" 对应的 "医院全称"
+                                        $str[17] = $tmp;  # 更新 "送检医院" 信息为 "医院全称"
+                                        $identity{$str[8]} = $ID{$tmp}.$str[9];  # 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                                }else{  # 送检医院 在 .HospitalTrans.txt 中不存在，报错，提示用户更新 .HospitalTrans.txt
                                         print $str[17],"木有找到\n";
-                                        $error = $str[17]."木有找到
-请检查后添加到.HospitalTrans.txt";
+                                        $error = $str[17]."木有找到请检查后添加到.HospitalTrans.txt";
                                         Win32::MsgBox $error, 0, "错误！";
                                         exit(0);
                                         $history{$str[8]} = 0;
@@ -663,18 +701,18 @@ sub List1_DblClick{
                                 }
                         }
 
-                        if ($identity{$str[8]} ne "NotFound"){
+                        if ($identity{$str[8]} ne "NotFound"){  # 送检医院没问题(不为 空 && 在.HospitalTrans.txt中存在)
+                                # 判断 患者编码 是否已经存在 嵌合率结果 (以前在该医院检测过)
                                 if (exists $Chimerism{$identity{$str[8]}}){
-                                        $history{$str[8]} = $#{$Chimerism{$identity{$str[8]}}}+1;
+                                        $history{$str[8]} = $#{$Chimerism{$identity{$str[8]}}}+1;  # 获取该 患者 在该医院总的检测次数
                                 }else{
-                                        $history{$str[8]} = 0;
+                                        $history{$str[8]} = 0;  # 该患者在该医院没有检测记录，第一次在这检测
                                 }
                         }
-                }else{
-                        if (exists $HasChimerism{$str[7]}){
-                                $error = "样本编号".$str[7]."(".$str[9].")显示存在嵌合率，
-但这并不是一个术后患者的样本！
-请检查后再次运行";
+                }else{  # 非 "术后" "患者" 样本，包括: "术前""患者" / "术前""供者"
+                        # 判断 .PrevChimerism.txt 中是否已存在该 实验编码 的记录
+                        if (exists $HasChimerism{$str[7]}){  # 若存在，则报错，显示提示信息
+                                $error = "样本编号".$str[7]."(".$str[9].")显示存在嵌合率，但这并不是一个术后患者的样本！请检查后再次运行";
                                 Win32::MsgBox $error, 0, "错误";
                                 return -1;
                         }
@@ -684,84 +722,55 @@ sub List1_DblClick{
                 foreach my $tmp(0..20){
                         if ($str[$tmp]){
                                 push @{$data_in[$i]}, $str[$tmp]; #data_in 二维列表，按InputSamples的顺序保存每一次实验信息
-                        }else{
+                        }else{  # 若该列信息为空，则设置为 "-"
                                 push @{$data_in[$i]}, "-";
                         }
                 }
                 # print $str[7], "\t", $data_in[$i][14],"\n";
-                $i ++;
+                $i ++;  # 更新实验编码序号
         }
         close IN;
         print "New Experiments: ",$test,"\n";
-        $error = "已读取，新报告数：".$test;
-        $text13 -> Text($error);
+        $error = "已读取，新检测个数为：".$test;
+        $text13 -> Text($error);  # 输出 供患信息.txt  读取结果
 
-        foreach my $TCAID(keys %together){
-                my @ddd=();
+        # 遍历每个 报告单编号
+        foreach my $TCAID(keys %together){  #together 二维哈希，第一维是哈希，键是 报告单编号，第二维是列表，保存每个 报告单编号 对应的 实验编码
+                my @ddd=();  # 存储典型的初次检测3个样本的结果, $ddd[0] <=> 术前患者检测 实验编码; ddd[1] <=> 术前供者检测 实验编码; $ddd[2] <=> 术后患者检测 实验编码;
                 my @temptogether = ();
-        #        print $TCAID,"|",$exp_num{$TCAID},"\n";
-                $exp_error{$TCAID} = 0;
-                if ($exp_num{$TCAID} == 3){
+                print "L808:",$TCAID,"|",$exp_num{$TCAID},"\n";  # 打印 报告单编号 对应的 实验编码 个数 (即，该报告对应的实验个数)
+                $exp_error{$TCAID} = 0;  # 记录报告单编号 是否存在 实验错误, 0:没问题; 1:有问题
+                if ($exp_num{$TCAID} == 3){  # 典型的初次检测，包括3个实验编号, 对应3份样本: "术前患者" + "术前供者" + "术后患者"
                         foreach my $exp_str_tmp(@{$together{$TCAID}}){
                                 # print "$exp_str_tmp\n";
-                                my $i = $exp_id{$exp_str_tmp};
+                                my $i = $exp_id{$exp_str_tmp};  # 获取该 实验编码 对应的是 供患信息.txt 中的第几个实验信息
                                 if ($data_in[$i][4] eq "术前"){
                                         if ($data_in[$i][10] eq "患者"){
                                                 $ddd[0] = $i;
-                                        }else{
+                                        }else{  # "术前""供者"
                                                 $ddd[1] = $i;
                                         }
-                                }else{
+                                }else{  # "术后"
                                         if ($data_in[$i][10] eq "患者"){
                                                 $ddd[2] = $i;
                                         }else{
                                                 $error = "报告编号：".$TCAID."不应包含术后供者样本，请检查！\n";
                                                 Win32::MsgBox $error, 0, "错误！";
-
-        #########################
-        # Win32::MsgBox(MESSAGE [, FLAGS [, TITLE]])
-        # Create a dialog box containing MESSAGE. FLAGS specifies the required icon and buttons according to the following table:
-        #
-        # 0 = OK
-        # 1 = OK and Cancel
-        # 2 = Abort, Retry, and Ignore
-        # 3 = Yes, No and Cancel
-        # 4 = Yes and No
-        # 5 = Retry and Cancel
-        #
-        # MB_ICONSTOP          "X" in a red circle
-        # MB_ICONQUESTION      question mark in a bubble
-        # MB_ICONEXCLAMATION   exclamation mark in a yellow triangle
-        # MB_ICONINFORMATION   "i" in a bubble
-        # TITLE specifies an optional window title. The default is "Perl".
-        #
-        # The function returns the menu id of the selected push button:
-        #
-        # 0  Error
-        # 1  OK
-        # 2  Cancel
-        # 3  Abort
-        # 4  Retry
-        # 5  Ignore
-        # 6  Yes
-        # 7  No
-        ########################
-
-                                                $exp_error{$TCAID} = 1;
+                                                $exp_error{$TCAID} = 1;  # 标记该 报告单编号对应的实验存在问题
                                         }
                                 }
                         }
-                        next if $exp_error{$TCAID} == 1;
-                        $exp_seq{$TCAID} = join ",", @ddd;
+                        next if $exp_error{$TCAID} == 1;  # 跳过实验存在问题的报告单编号
+                        $exp_seq{$TCAID} = join ",", @ddd;  # 存储该 报告单编号 对应的 3个实验编码, 以','分隔
                         # print $exp_seq{$TCAID},"\n";
                         # foreach my $i(0..2){
                                 # print $ddd[$i],"|",$exp_list[$ddd[$i]],"|",$data_in[$ddd[$i]][4],"|",$data_in[$ddd[$i]][10],"\n";
                         # }
-                }elsif ($exp_num{$TCAID} == 2){
-                        my @total=();
-                        foreach my $exp_str_tmp(@{$together{$TCAID}}){
-                                # print "$exp_str_tmp\n";
-                                my $i = $exp_id{$exp_str_tmp};
+                }elsif ($exp_num{$TCAID} == 2){  # 报告对应2份 实验编码
+                        my @total=();  # 存储两份实验编码的报告 顺序
+                        foreach my $exp_str_tmp(@{$together{$TCAID}}){  # 遍历每个 报告单编号 对应的 实验编码
+                                print "L840:$exp_str_tmp\n";
+                                my $i = $exp_id{$exp_str_tmp};  # 获取该 实验编码 对应的是 供患信息.txt 中的第几个实验信息
                                 my $sum = 0;
                                 if ($data_in[$i][4] eq "术前"){
                                         $sum += 0;
@@ -773,29 +782,34 @@ sub List1_DblClick{
                                 }else{
                                         $sum += 1;
                                 }
-                                push @total, $sum;
-                                push @total, $i;
+                                # "术前患者" $sum += 0
+                                # "术前供者" $sum += 1
+                                # "术后患者" $sum += 2
+                                # "术后供者" $sum += 3
+                                push @total, $sum; print "L857:$sum\n";
+                                push @total, $i; print "L858:$i\n";
                         }
-                        if ($total[0]> $total[2]){
+                        # 根据2个实验编码的sum值，确定二者的报告顺序？
+                        if ($total[0]> $total[2]){  # 存储该 报告单编号 对应的2份实验编码 的先后顺序 （按 "术前患者", "术前供者"， "术后患者"，"术后供者"）
                                 $exp_seq{$TCAID} = join ",", $total[3], $total[1];
                         }else{
                                 $exp_seq{$TCAID} = join ",", $total[1], $total[3];
                         }
-                        next if $exp_error{$TCAID} == 1;
+                        next if $exp_error{$TCAID} == 1;  # 没用
                         # print $exp_seq{$TCAID},"\n";
                         # my @tmpstr = split ",", $exp_seq{$TCAID};
                         # foreach my $i(@tmpstr){
                                 # print $i,"|",$exp_list[$i],"|",$data_in[$i][4],"|",$data_in[$i][10],"\n";
                         # }
-                }elsif ($exp_num{$TCAID} == 1){
-                        my $exp_str_tmp = ${$together{$TCAID}}[0];
-                        # print "$exp_str_tmp\n";
-                        my $i = $exp_id{$exp_str_tmp};
+                }elsif ($exp_num{$TCAID} == 1){  # 该报告单编号 仅对应 1份实验编码，获取该实验编码在 供患信息.txt 中的行号，报错，输出提示信息
+                        my $exp_str_tmp = ${$together{$TCAID}}[0];  # 获取该报告单编号 对应的 实验编码
+                        print "L874:$exp_str_tmp\n";
+                        my $i = $exp_id{$exp_str_tmp};  # 获取该 实验编码 对应的是 供患信息.txt 中的第几个实验信息
                         $error = "报告编号：".$TCAID."只包含一份实验样本，为".$data_in[$i][4].$data_in[$i][10]."样本。\n";
                         Win32::MsgBox $error, 0, "注意！";
-                        $exp_seq{$TCAID} = $i;
+                        $exp_seq{$TCAID} = $i;  # 后续关注此情况 %exp_seq 的使用情况
                         # print $i,"|",$exp_list[$i],"|",$data_in[$i][4],"|",$data_in[$i][10],"\n";
-                }else{
+                }else{  # 报告单编号 对应的 实验编码 过多 （>3)，输出错误信息。但是并没有跳过该报告？
                         $error  = "报告编号：".$TCAID."的实验样本编号过多！请检查！\n";
                         Win32::MsgBox $error, 0, "注意！";
                         $exp_error{$TCAID} = 1;
@@ -803,18 +817,28 @@ sub List1_DblClick{
         }
 
         $InputLoaded = 1;
-        $display2->Enable($InputLoaded*$SummaryLoaded);
-        $open3->Enable($InputLoaded*$SummaryLoaded);
+        $display2->Enable($InputLoaded*$SummaryLoaded);  # 将 "打印已有分型" 按钮,设置为可点击
+        $open3->Enable($InputLoaded*$SummaryLoaded);  # 将 "添加下机数据" 按钮，设置为可点击状态
 }
 
+#################################################################
+# List1_MouseMove 函数: "供患信息" 列表框中鼠标移上时的处理函数       #
+#################################################################
 sub List1_MouseMove{
         $sb -> Text('双击条目以读取');
 }
 
+#################################################################
+# List1_MouseOut 函数: "供患信息" 列表框中鼠标移出时的处理函数        #
+#################################################################
 sub List1_MouseOut{
         $sb -> Text('');
 }
 
+###################################  2020.05.21.17.34 ###########################
+################################################################################
+# Open1_Click 函数: "供患信息" 部分列表框下方的 "其他位置" 按钮点击时的处理函数        #
+################################################################################
 sub Open1_Click{
 
         my @parms;
@@ -859,14 +883,32 @@ sub Open1_Click{
 
 }
 
+###################################################################################
+# Open1_MouseMove 函数: "供患信息" 部分列表框下方的 "其他位置" 按钮鼠标移上时的处理函数        #
+###################################################################################
 sub Open1_MouseMove{
         $sb -> Text('从其他位置读取');
 }
 
+###################################################################################
+# Open1_MouseOut 函数: "供患信息" 部分列表框下方的 "其他位置" 按钮鼠标移出时的处理函数       #
+###################################################################################
 sub Open1_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# List2_DblClick 函数: "已有数据" 部分的列表框中双击时的处理函数                          #
+###################################################################################
+################# 读取 SummaryLoc 目录下的 已有型别汇总文件 （只读取保存文件名） ###############
+# 已有数据文件（型别汇总） 的格式如下 ##############################################################################################################################################################################################################
+# 0	1Marker1	2Marker2	3Marker3	4Marker4	5Marker5	6Marker6	7Marker7	8Marker8	9Marker9	10Marker10	11Marker11	12Marker12	13Marker13	14Marker14	15Marker15	16Marker16 ... 25Marker25
+# 示例如下：
+# 	D8S1179	D21S11	D7S820	CSF1PO	D3S1358	D5S818	D13S317	D16S539	D2S1338	D19S433	VWA	D12S391	D18S51	Amel	D6S1043	FGA
+# DT2000011	13、16	29、32.2	8、11	11	16	10	11	12			14、19		13、14	X		21、23
+# DT2000012	10、13	30	11	10、12	15、17	11	10、11	12			17、18		16	X、Y		22、25
+# DT2000007	11、15	30、32.2	11、12	11、12	15、17	7、10	8	11、13			17、19		15、16	X、Y		21、24
+# 特别说明： 1)带表头; 2)字段间以TAB分隔; 3) 文件扩展名需要 ".txt" #################################################################################################################################################################################################
 sub List2_DblClick{
         if (%PrevAllele){
                 $error = "已经成功读取数据，是否重新读取？";
@@ -875,84 +917,104 @@ sub List2_DblClick{
         }
 
         $SummaryLoaded = 0;
-        $display2->Enable($InputLoaded*$SummaryLoaded);
-        $open3->Enable($InputLoaded*$SummaryLoaded);
+        $display2->Enable($InputLoaded*$SummaryLoaded);  # 后续测试关注此行的作用
+        $open3->Enable($InputLoaded*$SummaryLoaded);  # 后续测试关注此行的作用
 
         $error = "尚未读取";
         $text23 -> Text($error);
 
-        my $sel = $Input2->GetCurSel();
-        $PrevExp_str = $PrevFound[$sel];
+        my $sel = $Input2->GetCurSel();  print "L984:" . $sel . "\n"; # 获取 "已有数据" 列表框中选中文件的下标
+        $PrevExp_str = $PrevFound[$sel];  print "L985:" . $PrevExp_str . "\n" ;# 获取选中文件的文件名字
 
         %PrevAllele = ();
 
-        unless ($InputLoaded){
+        unless ($InputLoaded){  # 需要先读取 "供患信息"
                 $error = "请先读取供患信息！\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return 0;
         }
 
-        unless (open IN,$PrevExp_str){
+        unless (open IN,$PrevExp_str){  # 打开 "已有数据" 双击选中的文件
                 $error = "文件打开失败！\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return 0;
         }
-        my $tmp = <IN>;
+        my $tmp = <IN>;  # 读取 "已有数据" 选中文件的表头
         chomp $tmp;
-        my $yes = 1;
+        my $yes = 1;  # 用于记录选中文件的表头格式是否正确:1) 17列; 2) 16列marker名在 %markerExist中均存在
         my @tmp = split /\t/, $tmp;
-        $yes = 0 if @tmp != 17;
-        # print "YES:",$yes,"\n";
-        foreach $i(1..16){
+        $yes = 0 if @tmp != 17;  # 判断 表头是否未 17列
+        print "L1014:YES:",$yes,"\n";
+        foreach $i(1..16){  # 判断表头中后16列对应的16个marker名 在 %markerExist 中是否存在，若有不存在的，则将 $yes = 0
                 $yes = 0 unless exists $markerExist{$tmp[$i]};
                 # print $tmp[$i],"|",$yes,"\n";
         }
 
-        if ($yes != 1){
+        if ($yes != 1){  # 表头不对，报错，给出提示信息
                 $error = "这个文件貌似不对\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return;
         }
-        print $PrevAllele{STR154465}{D7S820},"\n";
+        print "L1025:" . $PrevAllele{STR154465}{D7S820},"\n";  ######### bug? %PrevAllele在前面只有定义，没有赋值
+################################################  2020.05.22.08.10 ################################################
+# 已有数据文件（型别汇总） 的格式如下 ##############################################################################################################################################################################################################
+# 0	1Marker1	2Marker2	3Marker3	4Marker4	5Marker5	6Marker6	7Marker7	8Marker8	9Marker9	10Marker10	11Marker11	12Marker12	13Marker13	14Marker14	15Marker15	16Marker16 ... 25Marker25
+# 示例如下：
+# 	D8S1179	D21S11	D7S820	CSF1PO	D3S1358	D5S818	D13S317	D16S539	D2S1338	D19S433	VWA	D12S391	D18S51	Amel	D6S1043	FGA
+# DT2000011	13、16	29、32.2	8、11	11	16	10	11	12			14、19		13、14	X		21、23
+# DT2000012	10、13	30	11	10、12	15、17	11	10、11	12			17、18		16	X、Y		22、25
+# DT2000007	11、15	30、32.2	11、12	11、12	15、17	7、10	8	11、13			17、19		15、16	X、Y		21、24
+#########################################################################################################################################################################################################################################
         while (<IN>){
                 chomp;
                 my @str = split "\t", $_;
-                unless (exists $exp_id{$str[0]}){
+                ###### 这里需要测试，以确认处理逻辑 ##########
+                unless (exists $exp_id{$str[0]}){  # 已有数据文件里的 实验编码 在 供患信息.txt 里不存在，则跳过该实验编码
                         # print "Next!\n" if $str[0] eq 'STR154465';
                         next;
                 }
                 ###很重要###
-                if (exists $HasChimerism{$str[0]}){
+                ###### 这里需要测试，以确认处理逻辑 ##########
+                if (exists $HasChimerism{$str[0]}){  # 判断 %HashChimerism (.PrevChimerism.txt) 中是否已有该 实验编码，如果有，则跳过该实验编码
                         print $HasChimerism{$str[0]},"\n";
                         next;
                 }
                 ###此处如果不写，会导致新的Allele无法读取###
-                my $num = shift @str;
-                foreach my $tmp(@markers){
-                        $PrevAllele{$num}{$tmp} = shift @str;
+                my $num = shift @str;  # 获取 实验编码，移除实验编码之后， @str 中仅存在所有marker的型别
+                foreach my $tmp(@markers){  # 遍历所有marker  ** 注意，这样写，需要保证已有数据中的marker顺序 与 @markers中的顺序完全一致，否则会搞混。**
+                        $PrevAllele{$num}{$tmp} = shift @str;  # 保存每个 实验编码 的每个marker 对应的 型别信息
                         # print $num,"|",$tmp,"|", $PrevAllele{$num}{$tmp} ,"\n" if $PrevAllele{$num}{$tmp}=~ /\s/;
-                        $PrevAllele{$num}{$tmp} =~ s/\s//g;
+                        $PrevAllele{$num}{$tmp} =~ s/\s//g;  # 去掉 型别信息 中的空字符
                 }
         }
         close IN;
         # print $PrevAllele{STR154465}{D7S820},"\n";
         $error = "读取成功！";
-        $text23 -> Text($error);
+        $text23 -> Text($error);  # 将 "已有数据" 部分列表框下方的 "尚未读取" 更新为 "读取成功！"
         $curr_index = 0;
 
-        $SummaryLoaded = 1;
-        $display2->Enable($InputLoaded*$SummaryLoaded);
-        $open3->Enable($InputLoaded*$SummaryLoaded);
+        $SummaryLoaded = 1;  # 将 已有数据读取状态设置为 1，此时 $InputLoaded = 1 and $SummaryLoaded = 1
+        $display2->Enable($InputLoaded*$SummaryLoaded);  # 将 "打印已有分型" 按钮，设置为"可点击"状态
+        $open3->Enable($InputLoaded*$SummaryLoaded);  # 将 "添加下机数据" 按钮，设置为可点击状态
 }
 
+###################################################################################
+# List2_MouseMove 函数: "已有数据" 部分的列表框鼠标移上时的处理函数                      #
+###################################################################################
 sub List2_MouseMove{
         $sb -> Text('双击条目以读取');
 }
 
+###################################################################################
+# List2_MouseOut 函数: "已有数据" 部分的列表框鼠标移出时的处理函数                       #
+###################################################################################
 sub List2_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# Open2_Click 函数: "已有数据" 部分列表框下方的 "其他位置" 按钮点击时的处理函数            #
+###################################################################################
 sub Open2_Click{
         my @parms;
         push @parms,
@@ -993,32 +1055,42 @@ sub Open2_Click{
 
 }
 
+###################################################################################
+# Open2_MouseMove 函数: "已有数据" 部分列表框下方的 "其他位置" 按钮鼠标移上时的处理函数  #
+###################################################################################
 sub Open2_MouseMove{
         $sb -> Text('从其他位置读取');
 }
+
+###################################################################################
+# Open2_MouseMove 函数: "已有数据" 部分列表框下方的 "其他位置" 按钮鼠标移出时的处理函数  #
+###################################################################################
 
 sub Open2_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# DISPLAY2_Click 函数: "打印已有分型" 按钮 点击时的处理函数                             #
+###################################################################################
+### "打印已有分型" 指的是，打印已有 "术前患者" 和 "术前供者" 的型别 #######################
 sub DISPLAY2_Click{
-        unless (%PrevAllele){
+        unless (%PrevAllele){  # 已有分型结果为空，报错，提示用户先读取文件
                 $error = "尚未读取文件！\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return 0;
         }
 
 A:
-        my $Temp_typinglist = sprintf "分型列表-%4d%02d%02d.xlsx",$year, $mon, $mday;
+        my $Temp_typinglist = sprintf "分型列表-%4d%02d%02d.xlsx",$year, $mon, $mday;  # 定义 已有分型输出结果
         my $workbook;
-        unless ($workbook = Excel::Writer::XLSX->new($Temp_typinglist)){
-                $error = $Temp_typinglist."正在使用中！
-请关闭后重试！";
+        unless ($workbook = Excel::Writer::XLSX->new($Temp_typinglist)){  # 如果 excel文件 打不开，则报错，输出提示信息
+                $error = $Temp_typinglist."正在使用中！请关闭后重试！";
                 Win32::MsgBox $error, 0, "错误！";
                 return 0;
         }
 
-        my $format1 = $workbook->add_format(
+        my $format1 = $workbook->add_format(  # 定义 excel 表格的格式
                         size            => 9,
                         bold            => 0,
                         align           => 'left',
@@ -1029,30 +1101,30 @@ A:
                         'right'         => 1,
         );
 
-        my $worksheet = $workbook->add_worksheet();
-        $worksheet->hide_gridlines();
-        $worksheet->keep_leading_zeros();
-        $worksheet->set_landscape();
-        $worksheet->set_paper(9);
-        $worksheet->set_margin_left(0.394);
-        $worksheet->set_margin_right(0.394);
-        $worksheet->set_column(0,2, 10);
-        $worksheet->set_column(3,3, 1.75);
-        $worksheet->set_column(4,5, 10);
-        $worksheet->set_column(6,7, 1.75);
-        $worksheet->set_column(7,8, 10);
-        $worksheet->set_column(9,9, 1.75);
-        $worksheet->set_column(10,11, 10);
-        $worksheet->set_column(12,12, 1.75);
-        $worksheet->set_column(13,15, 10);
+        my $worksheet = $workbook->add_worksheet();  # 往 excel文件中 添加 数据表(worksheet)
+        $worksheet->hide_gridlines();  # 隐藏网格线
+        $worksheet->keep_leading_zeros();  # 保留数字开头的 '0'
+        $worksheet->set_landscape();  # 设置worksheet的页面方向（打印方向）为竖向
+        $worksheet->set_paper(9);  # 设置打印纸的格式为 A4
+        $worksheet->set_margin_left(0.394);  # 设置worksheet的左边距
+        $worksheet->set_margin_right(0.394); # 设置worksheet的右边距
+        $worksheet->set_column(0,2, 10);  # 设置0-2列 (第1-3列，共3列)的宽度为 10
+        $worksheet->set_column(3,3, 1.75);  # 设置3列 (第4列)的宽度为 1.75
+        $worksheet->set_column(4,5, 10);  # 设置4-5列 (第5-6列)的宽度为 10
+        $worksheet->set_column(6,7, 1.75);  # 设置6-7列 (第7-8列)的宽度为 1.75
+        $worksheet->set_column(7,8, 10);  # 设置7-8列 (第8-9列)的宽度为 10
+        $worksheet->set_column(9,9, 1.75);  # 设置9列 (第10列)的宽度为 1.75
+        $worksheet->set_column(10,11, 10);  # 设置10-11列 (第11-12列)的宽度为 10
+        $worksheet->set_column(12,12, 1.75);  # 设置12列 (第13列)的宽度为 1.75
+        $worksheet->set_column(13,15, 10);  # 设置13-15列 (第14-16列)的宽度为 10
 
-        my $pages = int(($#TCA_id+1) / 10)+1;
+        my $pages = int(($#TCA_id+1) / 10)+1;  # 每个页面打印10个报告单对应的 "术前患者"和"术前供者"的型别，@TCA_id:存储 供患信息.txt 中的报告单编号
 
-        foreach my $i(0..$pages*39-1){
-                $worksheet->set_row($i, 12.7);
+        foreach my $i(0..$pages*39-1){  # 每个打印页面包括 40行
+                $worksheet->set_row($i, 12.7);  # 设置 行高 为 12.7
         }
 
-        foreach my $i(1..$pages){
+        foreach my $i(1..$pages){  # 为每一页的第一列和最后一列，写上 marker名
                 # $worksheet->write(($i-1)*38,0,' ', $format1);
                 # $worksheet->write(($i-1)*38+1,0,' ', $format1);
                 # $worksheet->write(($i-1)*38+19,0,' ', $format1);
@@ -1067,50 +1139,58 @@ A:
                 }
         }
 
-        foreach my $i(0.. $#TCA_id){
-                my $TCAID = $TCA_id[$i];
-                my @seq = split ",", $exp_seq{$TCAID};
-                my $AAA = $exp_list[$seq[0]];
-                my $BBB = $exp_list[$seq[1]];
+        foreach my $i(0.. $#TCA_id){  # 遍历每个 报告单编号，输出对应的 "术前患者""术前供者" 的型别
+                my $TCAID = $TCA_id[$i];  # 获取 报告单编号
+                my @seq = split ",", $exp_seq{$TCAID};  # 获取该 报告单编号 对应的 "术前患者" "术前供者" ("术后患者" 可能包括也可能不包括)在 供患信息.txt 中的序号
+                my $AAA = $exp_list[$seq[0]];  # 获取 "术前患者" 对应的 实验编码
+                my $BBB = $exp_list[$seq[1]];  # 获取 "术前供者" 对应的 实验编码
                 my $j = 2;
                 my $strA;
                 my $strB;
-                $worksheet->write(int($i/5)*19,$i%5*3+1,$data_in[$seq[-1]][7], $format1);
-                $worksheet->write(int($i/5)*19,$i%5*3+2,decode('GB2312', $data_in[$seq[-1]][9]), $format1);
-                $worksheet->write(int($i/5)*19+1,$i%5*3+1,$AAA, $format1);
-                $worksheet->write(int($i/5)*19+1,$i%5*3+2,$BBB, $format1);
-                foreach (@markers){
-                        unless (exists $PrevAllele{$AAA}){
-                                $strA = ' ';
-                        }else{
-                                $strA =  $PrevAllele{$AAA}{$_};
+                # 每一行打印5个 报告单编号 对应的 "术前患者""术前供者" 的型别
+                $worksheet->write(int($i/5)*19,$i%5*3+1,$data_in[$seq[-1]][7], $format1);  # 第0行 第1列，写上 "术前患者" 的实验编码
+                $worksheet->write(int($i/5)*19,$i%5*3+2,decode('GB2312', $data_in[$seq[-1]][9]), $format1);  # 第0行 第2列，写上 "术前患者" 的姓名
+                $worksheet->write(int($i/5)*19+1,$i%5*3+1,$AAA, $format1);  # 第1行 第1列，写上 "术前患者" 的型别
+                $worksheet->write(int($i/5)*19+1,$i%5*3+2,$BBB, $format1);  # 第1行 第2列，写上 "术前供者" 的型别
+                foreach (@markers){  # 遍历写入每个 marker 的型别
+                        unless (exists $PrevAllele{$AAA}){  # "术前患者" 对应的 实验编码在 已有数据 中不存在  # %PrevAllele 保存已有数据中 每个 实验编码 的每个marker 对应的 型别信息
+                                $strA = ' ';  # 不存在，则将 $strA = ' '
+                        }else{  # "术前患者" 对应的 实验编码在 已有数据 中存在
+                                $strA =  $PrevAllele{$AAA}{$_};  # 将 $strA 设置为 已有数据 中该marker对应的型别
                         }
-                        unless (exists $PrevAllele{$BBB}){
-                                $strB = ' ';
-                        }else{
-                                $strB =  $PrevAllele{$BBB}{$_};
+                        unless (exists $PrevAllele{$BBB}){  # "术前供者" 对应的 实验编码在 已有数据 中不存在
+                                $strB = ' ';  # 不存在，则将 $strB = ' '
+                        }else{  # "术前供者" 对应的 实验编码在 已有数据 中存在
+                                $strB =  $PrevAllele{$BBB}{$_};  # 将 $strB 设置为 已有数据 中该marker对应的型别
                         }
-                        $worksheet->write(int($i/5)*19+$j,$i%5*3+1, decode('GB2312', $strA), $format1);
-                        $worksheet->write(int($i/5)*19+$j,$i%5*3+2, decode('GB2312', $strB), $format1);
+                        $worksheet->write(int($i/5)*19+$j,$i%5*3+1, decode('GB2312', $strA), $format1);  # 遍历写上 "术前患者" 的每个marker的型别
+                        $worksheet->write(int($i/5)*19+$j,$i%5*3+2, decode('GB2312', $strB), $format1);  # 遍历写上 "术前患者" 的每个marker的型别
                         $j ++;
                 }
         }
 
-
-        $workbook -> close();
-        `start $Temp_typinglist`;
+        $workbook -> close();  # 已有分型 写入 excel文件 "分型列表-%4d%02d%02d.xlsx" 完成
+        `start $Temp_typinglist`;  # 调用windows cmd, 启动单独的“命令提示符”窗口来运行指定程序或命令。
 
         return 0;
 }
 
+###################################################################################
+# DISPLAY2_Click 函数: "打印已有分型" 按钮 鼠标移上 时的处理函数                       #
+###################################################################################
 sub DISPLAY2_MouseMove{
         $sb -> Text('参考已有分型结果打印本次实验数据');
 }
 
+###################################################################################
+# DISPLAY2_Click 函数: "打印已有分型" 按钮 鼠标移出 时的处理函数                       #
+###################################################################################
 sub DISPLAY2_MouseOut{
         $sb -> Text('');
 }
 
+#############################################################
+################## 老版本功能，已弃用 ##########################
 # sub W2_PREV_Click{
         # $direct = -1;
         # $curr_index --;
@@ -1142,14 +1222,20 @@ sub DISPLAY2_MouseOut{
     # $Grid->Resize ($width, $height-120);
 # }
 
+################## 老版本功能，已弃用 ##########################
+#############################################################
+
+###################################################################################
+# Open3_Click 函数: "添加下机数据" 按钮 点击 时的处理函数                             #
+###################################################################################
 sub Open3_Click{
-        unless (@exp_list){
+        unless (@exp_list){  # 添加下机数据 前需先读取供患信息
                 $error = "请先读取供患信息！\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return 0;
         }
 
-        unless (%PrevAllele){
+        unless (%PrevAllele){  # 添加下机数据 前需先读取 已有分型信息
                 $error = "请先读取已有分型信息！\n";
                 Win32::MsgBox $error, 0, "错误！";
                 return 0;
@@ -1161,22 +1247,23 @@ sub Open3_Click{
           -filter =>
                 [ 'TXT - Tab分隔文本', '*.txt'
                 ],
-          -directory => $ConfigHash{ThisLoc},
+          -directory => $ConfigHash{ThisLoc},  # 从 ThisLoc 目录下读取 .txt
           -title => '选择文件',
           -parent => $main,
           -owner => $main;
-        my @file = Win32::GUI::GetOpenFileName ( @parms );
-        # print "$_\n" for @file;
+        my @file = Win32::GUI::GetOpenFileName ( @parms );  # 获取选中的文件名
+        print "L1322:$_\n" for @file;
         return 0 unless $file[0];
-        if (@file == 1){
+        if (@file == 1){  # 选择一个文件
                 chomp $file[0];
-                push @ThisFound, $file[0];
-                push @ThisList, &Shorten($file[0], 57);
-                $Input3 -> Enable(1);
-                $Input3 -> Add(&Shorten($file[0], 57));
-                $Read3->Enable(1);
+                push @ThisFound, $file[0];  # 将选中的 下机数据.txt 名字 存入 @ThisFound
+                push @ThisList, &Shorten($file[0], 57);  # 调用 Shorten函数截短输入文件名，同时 存入 @ThisList
+                $Input3 -> Enable(1);  # 将 "添加下机数据" 部分的列表框设置为可见
+                $Input3 -> Add(&Shorten($file[0], 57));  # 将截断的文件名 显示在 "添加下机数据" 部分的列表框中
+                $Read3->Enable(1);  # 将 "读取" 按钮 设置为 可点击
                 return 0;
         }
+        ## 以下处理 选中多个文件 的情况
         ##如果多选，返回格式为 路径;文件名1;文件名2...
         my $tmp = shift @file;
         chomp $tmp;
@@ -1210,31 +1297,74 @@ sub Open3_Click{
         $Read3->Enable(1);
 }
 
+###################################################################################
+# Open3_MouseMove 函数: "添加下机数据" 按钮 鼠标移上 时的处理函数                      #
+###################################################################################
 sub Open3_MouseMove{
         $sb -> Text('选择下机数据文件并添加到右侧列表中');
 }
 
+###################################################################################
+# Open3_MouseOut 函数: "添加下机数据" 按钮 鼠标移出 时的处理函数                       #
+###################################################################################
 sub Open3_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# List3_SelChange 函数: "添加下机数据" 部分的列表框 选中文件 时的处理函数               #
+###################################################################################
 sub List3_SelChange{
         my @sel = $Input3->GetSelItems();
         if (@sel > 0){
-                $del3 -> Enable(1);
+                $del3 -> Enable(1);  # 选中文件时，"移除" 按钮设置为 "可点击"
         }else{
-                $del3 -> Enable(0);
+                $del3 -> Enable(0);  # 未选中文件时，"移除" 按钮设置为 "不可点击"
         }
 }
 
+###################################################################################
+# List3_MouseMove 函数: "添加下机数据" 部分的列表框 鼠标移上 时的处理函数               #
+###################################################################################
 sub List3_MouseMove{
         $sb -> Text('选定条目进行更多操作(支持Ctrl、Shift进行多选)');
 }
 
+###################################################################################
+# List3_MouseOut 函数: "添加下机数据" 部分的列表框 鼠标移出 时的处理函数                #
+###################################################################################
 sub List3_MouseOut{
         $sb -> Text('');
 }
 
+
+################################################  2020.05.22.11.48 ################################################
+###################################################################################
+# Read3_Click 函数: "读取" 按钮 点击 时的处理函数                                    #
+###################################################################################
+# 下机数据文件 的格式如下 ##############################################################################################################################################################################################################
+# 0Sample Name	1Panel	2Marker	3Allele 1	4Allele 2	5Allele 3	6Allele 4	7Peak Area 1	8Peak Area 2	9Peak Area 3	10Peak Area 4	11PHR	12AN
+# 示例如下：
+# Sample Name	Panel	Marker	Allele 1	Allele 2	Allele 3	Allele 4	Peak Area 1	Peak Area 2	Peak Area 3	Peak Area 4	PHR	AN
+# 20FCM00134	Sinofiler_v1	D8S1179	10	11			41782	38113			0	0
+# 20FCM00134	Sinofiler_v1	D21S11	29	30			19869	17794			0	0
+# 20FCM00134	Sinofiler_v1	D7S820	12				41169				-2	0
+# 20FCM00134	Sinofiler_v1	CSF1PO	9	13			30706	27814			0	0
+# 20FCM00134	Sinofiler_v1	D3S1358	15	17			66461	67763			0	0
+# 20FCM00134	Sinofiler_v1	D5S818	10	12	14		554	69030	64854		-1	-1
+# 20FCM00134	Sinofiler_v1	D13S317	10	11			63975	57160			0	0
+# 20FCM00134	Sinofiler_v1	D16S539	11	13			63035	55449			0	0
+# 20FCM00134	Sinofiler_v1	D2S1338	17	19	24		307	45475	37783		-1	-1
+# 20FCM00134	Sinofiler_v1	D19S433	12.2	15.2			32280	35424			0	0
+# 20FCM00134	Sinofiler_v1	vWA	14	18			64017	57671			0	0
+# 20FCM00134	Sinofiler_v1	D12S391	19	23			55455	45320			0	0
+# 20FCM00134	Sinofiler_v1	D18S51	14				115992				-2	0
+# 20FCM00134	Sinofiler_v1	AMEL	X				113366				-1	-1
+# 20FCM00134	Sinofiler_v1	D6S1043	12	14			48624	44775			0	0
+# 20FCM00134	Sinofiler_v1	FGA	18	23			38932	30702			0	0
+# 20FCM00134-T	Sinofiler_v1	D8S1179	10	11	14		57390	45581	249		-1	-1
+# 20FCM00134-T	Sinofiler_v1	D21S11	29	30			33034	26495			0	0
+#########################################################################################################################################################################################################################################
 sub Read3_Click{
         if (%ThisAllele){
                 $error = "已经成功读取数据，是否重新读取？";
@@ -1247,7 +1377,7 @@ sub Read3_Click{
         $run4 -> Enable(0);
         $text3 -> Text("尚未读取");
 
-        foreach my $file (@ThisFound){
+        foreach my $file (@ThisFound){  # 遍历 "添加下机数据"列表框中的文件
                 next if $file =~/^\./;
                 if (open IN,$file){
 
@@ -1259,114 +1389,119 @@ sub Read3_Click{
                 my %USE = ();
                 while(<IN>){
                         chomp;
-                        next if /Sample\sName/;
-                        next if /LADDER/;
-                        next if /NC\s/;
-                        # next if /QC\d+\s/;
+                        next if /Sample\sName/;  # 表头行 "Sample Name"开头
+                        next if /LADDER/;  # 跳过 LADDER行 （内标）
+                        next if /NC\s/;  # 跳过含有 NC 的行，空对照
+                        # next if /QC\d+\s/;  # 跳过含有 QC 的行，质控品? （未启用）
 
                         my @line = split /\t/,$_;
                         my ($tmpallele, $tmparea, $num);
-                        if ($line[2] =~ /vWA/){$line[2] =~ s/vWA/VWA/;}
-                        if ($line[2] =~ /AMEL/){$line[2] =~ s/AMEL/Amel/;}
+                        if ($line[2] =~ /vWA/){$line[2] =~ s/vWA/VWA/;}  # 将marker "vWA" 替换为 "VMA"
+                        if ($line[2] =~ /AMEL/){$line[2] =~ s/AMEL/Amel/;}  # 将marker "AMEL" 替换为 "Amel"
                         my $found = 0;
-                        if (exists $exp_id{$line[0]}){
-                                $num = $line[0];
+                        if (exists $exp_id{$line[0]}){  # $line[0]：在 供患信息.txt 中对应"实验编码" ，但在 下机数据.txt 中对应 "Sample Name"
+                                $num = $line[0];  # $num：存放在 供患信息.txt 中存在的 "实验编码"
                                 $found = 1;
                                 # print "$num 找到了！\n";
-                        }elsif($line[0] =~ /^(TB\d+)/){
-                                my $tmpstr = $1;
+                        }elsif($line[0] =~ /^(TB\d+)/){  # 判断 实验编码 是否以 TB+数字 格式开头
+                                my $tmpstr = $1;  print "L1451:" . $tmpstr . "\n";  # 测试看看
 
-                                if (exists $trans{$tmpstr}){
+                                if (exists $trans{$tmpstr}){  # %trans中存在 该实验编码的记录 #用来保存实验编码缩写到全称的转换
                                         if ($trans{$tmpstr} eq "ERROR"){
                                                 $num = $line[0];
                                         }else{
                                                 $num = $trans{$tmpstr};
                                                 $found = 1;
                                         }
-                                }else{
-                                        foreach my $str(@exp_list){
-                                                if ($str =~ /$tmpstr$/i){
+                                }else{  # %trans中 不存在 该实验编码的记录
+                                        foreach my $str(@exp_list){  # @exp_list：用于存储 供患信息.txt 中的实验编码
+                                                if ($str =~ /$tmpstr$/i){  # 判断 下机数据中读取的 实验编码 是否为 供患信息.txt 中某个实验编码的一部分 （即，简写）
                                                         $found = 1;
-                                                        $num = $str;
-                                                        $trans{$tmpstr} = $str;
+                                                        $num = $str;  # 将 实验编码简写 替换为 供患信息.txt 中的"实验编码"
+                                                        $trans{$tmpstr} = $str;  # 记录 实验编码简写 与 供患信息.txt 中"实验编码" 的对应关系
                                                         # print "$tmpstr --> $str\n";
-                                                        last;
+                                                        last;  # 跳出 遍历 @exp_list 的循环
                                                 }
                                         }
-                                        if ($found == 0){
+                                        if ($found == 0){  # 实验编码 不是 供患信息.txt 中某个实验编码的一部分，提示 实验编码错误。
                                                 # print "未找到",$line[0],"的实验记录！\n";
-                                                $trans{$tmpstr} = "ERROR";
-                                                $num = $line[0];
+                                                $trans{$tmpstr} = "ERROR";  # 将该 实验编码 对应的 全称 设置为 "ERROR"
+                                                $num = $line[0];  # 将实验编码 设置为 第一列的完整信息
                                         }
                                 }
-                        }elsif($line[0] =~ /^(\d{3,7})-?([A-Z]*)$/){
-                                my $tmpstr = $2 ? $1.'-'.$2 : $1;
+                        }elsif($line[0] =~ /^(\d{3,7})-?([A-Z]*)$/){  # 若实验编码的格式为 3-7位数字 + -(有/无) + 任意个数的大写字母
+                                my $tmpstr = $2 ? $1.'-'.$2 : $1;  # 存在1个以上的大写字母，则将 $tmpstr 设置为 数字-字母；否则，将 $tmpstr 设置为 数字
 
-                                if (exists $trans{$tmpstr}){
+                                if (exists $trans{$tmpstr}){  # %trans中存在 该实验编码的记录 #用来保存实验编码缩写到全称的转换
                                         if ($trans{$tmpstr} eq "ERROR"){
                                                 $num = $line[0];
                                         }else{
                                                 $num = $trans{$tmpstr};
                                                 $found = 1;
                                         }
-                                }else{
-                                        foreach my $str(@exp_list){
-                                                if ($str =~ /$tmpstr$/i){
+                                }else{  # %trans中 不存在 该实验编码的记录
+                                        foreach my $str(@exp_list){  # @exp_list：用于存储 供患信息.txt 中的实验编码
+                                                if ($str =~ /$tmpstr$/i){  # 判断 下机数据中读取的 实验编码 是否为 供患信息.txt 中某个实验编码的一部分 （即，简写）
                                                         $found = 1;
-                                                        $num = $str;
-                                                        $trans{$tmpstr} = $str;
+                                                        $num = $str;  # 将 实验编码简写 替换为 供患信息.txt 中的"实验编码"
+                                                        $trans{$tmpstr} = $str;  # 记录 实验编码简写 与 供患信息.txt 中"实验编码" 的对应关系
                                                         # print "$tmpstr --> $str\n";
-                                                        last;
+                                                        last;  # 跳出 遍历 @exp_list 的循环
                                                 }
                                         }
-                                        if ($found == 0){
+                                        if ($found == 0){  # 实验编码 不是 供患信息.txt 中某个实验编码的一部分，提示 实验编码错误。
                                                 # print "未找到",$line[0],"的实验记录！\n";
-                                                $trans{$tmpstr} = "ERROR";
-                                                $num = $line[0];
+                                                $trans{$tmpstr} = "ERROR";  # 将该 实验编码 对应的 全称 设置为 "ERROR"
+                                                $num = $line[0];  # 将实验编码 设置为 第一列的完整信息
                                         }
                                 }
-                        }else{
-                                # print "实验编码",$line[0],"有错误，请检查！\n";
+                        }else{  # 否则，输出提示信息，跳过该行
+                                print "L1503:实验编码",$line[0],"有错误，请检查！\n";
                                 next;
                         }
 
-                        next if $found == 0;
+                        next if $found == 0;  # 实验编码 不是 供患信息.txt 中某个实验编码(或它的的一部分)，提示 实验编码错误，跳过该行。
                         #print $file,"|",$num,"\n";
-                        if    ($line[6]){$tmpallele = join "、", ($line[3],$line[4],$line[5],$line[6]);}
-                        elsif ($line[5]){$tmpallele = join "、", ($line[3],$line[4],$line[5]);}
-                        elsif ($line[4]){$tmpallele = join "、", ($line[3],$line[4]);}
-                        else            {$tmpallele =             $line[3];}
+# 下机数据文件 的格式如下 ##############################################################################################################################################################################################################
+# 0Sample Name	1Panel	2Marker	3Allele 1	4Allele 2	5Allele 3	6Allele 4	7Peak Area 1	8Peak Area 2	9Peak Area 3	10Peak Area 4	11PHR	12AN
+# 示例如下：
+# Sample Name	Panel	Marker	Allele 1	Allele 2	Allele 3	Allele 4	Peak Area 1	Peak Area 2	Peak Area 3	Peak Area 4	PHR	AN
+# 20FCM00134	Sinofiler_v1	D8S1179	10	11			41782	38113			0	0
+                        if    ($line[6]){$tmpallele = join "、", ($line[3],$line[4],$line[5],$line[6]);}  # $line[6] = Allele 4 不为空
+                        elsif ($line[5]){$tmpallele = join "、", ($line[3],$line[4],$line[5]);}  # Allele 4 为空 && Allele 3 不为空
+                        elsif ($line[4]){$tmpallele = join "、", ($line[3],$line[4]);}  # Allele 4 和 Allele 3 都为空 && Allele 2  不为空
+                        else            {$tmpallele =             $line[3];}  # Allele 4 , Allele 3 和 Allele 2 都为空
 
-                        if    ($line[10]){$tmparea = join "、", ($line[7],$line[8],$line[9],$line[10]);}
-                        elsif ($line[9]) {$tmparea = join "、", ($line[7],$line[8],$line[9]);}
-                        elsif ($line[8]) {$tmparea = join "、", ($line[7],$line[8]);}
-                        else             {$tmparea =             $line[7];}
+                        if    ($line[10]){$tmparea = join "、", ($line[7],$line[8],$line[9],$line[10]);}  # Peak Area 4 不为空
+                        elsif ($line[9]) {$tmparea = join "、", ($line[7],$line[8],$line[9]);}  # Peak Area 4 为空 && Peak Area 3 不为空
+                        elsif ($line[8]) {$tmparea = join "、", ($line[7],$line[8]);}  # Peak Area 4 和 Peak Area 3 都为空 && Peak Area 2 不为空
+                        else             {$tmparea =             $line[7];}  # Peak Area 4, 3,2 都为空
 
                         # if (exists $PrevAllele{$num}{$line[2]}){
                                 # $ThisAllele{$num}{$line[2]} = $tmpallele;
                                 # $area  {$num}{$line[2]} = $tmparea;
                         # }
                         #
-                        if (exists $PrevAllele{$num}){
+                        if (exists $PrevAllele{$num}){  # %PrevAllele 保存已有数据中 每个 实验编码 的每个marker 对应的 型别信息
+                                # 实验编码 在 已有数据中已经存在型别信息
                                 print "$num 已有！\n";
                                 if (exists $USE{$num}){
                                         next;
                                 }else{
-                                        $error = "样本编号 ".$num." 已有分型数据，本次下机数据是否使用？
-如果此样本是患者术后，本次数据不使用将会导致错误！";
+                                        $error = "实验编码:".$num." 已有分型数据，本次下机数据是否使用？如果此样本是患者术后，本次数据不使用将会导致错误！";
                                         my $s = Win32::MsgBox $error,4, "注意！";
-                                        if ($s == 6){
-                                                delete $PrevAllele{$num};
-                                                $ThisAllele{$num}{$line[2]} = $tmpallele;
-                                                $area{$num}{$line[2]} = $tmparea;
-                                        }else{
+                                        if ($s == 6){  # 用户选择 使用本次下机数据 $s == 6 means user select "Yes"
+                                                delete $PrevAllele{$num};  # 删除 已有分析数据 中该实验编码的记录
+                                                $ThisAllele{$num}{$line[2]} = $tmpallele;  # 存放 该实验编码 该marker 对应的型别信息
+                                                $area{$num}{$line[2]} = $tmparea;  # 存放 该实验编码 该marker 对应的 area信息
+                                        }else{  # 用户选择 不适用本次下机数据
                                                 $USE{$num} = 'no';
-                                                next;
+                                                next;  # 跳到下一行
                                         }
                                 }
-                        }else{
-                                $ThisAllele{$num}{$line[2]} = $tmpallele;
-                                $area{$num}{$line[2]} = $tmparea;
+                        }else{  # 实验编码 在 已有数据 中 不存在型别信息
+                                $ThisAllele{$num}{$line[2]} = $tmpallele;  # 存放 该实验编码 该marker 对应的型别信息
+                                $area{$num}{$line[2]} = $tmparea;  # 存放 该实验编码 该marker 对应的 area信息
                         }
                         #
 
@@ -1378,20 +1513,29 @@ sub Read3_Click{
 
         }
         $error = "读取成功";
-        $text3 -> Text($error);
-        $ExpLoaded = 1;
-        $run4 -> Enable(1);
+        $text3 -> Text($error);  # 将 "添加下机数据" 列表框下方"尚未读取" 提示信息更新为 "读取成功"
+        $ExpLoaded = 1;  # 标记 下机数据已经读取
+        $run4 -> Enable(1);  # 将 "生成报告" 按钮设置为 "可点击"
         return 0;
 }
 
+###################################################################################
+# Read3_MouseMove 函数: "读取" 按钮 鼠标移上 时的处理函数                             #
+###################################################################################
 sub Read3_MouseMove{
         $sb -> Text('读取左侧列表中的数据');
 }
 
+###################################################################################
+# Read3_MouseOut 函数: "读取" 按钮 鼠标移出 时的处理函数                              #
+###################################################################################
 sub Read3_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# Del3_Click 函数: "移除" 按钮 点击 时的处理函数                                      #
+###################################################################################
 sub Del3_Click{
         my @sel = $Input3->GetSelItems();
         # print $_,"," for @sel;
@@ -1417,172 +1561,25 @@ sub Del3_Click{
         }
 }
 
+###################################################################################
+# Del3_MouseMove 函数: "移除" 按钮 鼠标移上 时的处理函数                              #
+###################################################################################
 sub Del3_MouseMove{
         $sb -> Text('移除右侧列表中选中的文件');
 }
 
+###################################################################################
+# Del3_MouseOut 函数: "移除" 按钮 鼠标移出 时的处理函数                              #
+###################################################################################
 sub Del3_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# RUN_Click 函数: "生成报告" 按钮 点击 时的处理函数                                    #
+###################################################################################
 sub RUN_Click{
-
-        # Righto... I found some stuff, but not exactly what I was after
-# From the Documentation...
-# BrowseForFolder( OPTIONS ) Displays the standard ``Browse For Folder'' dialog box. Returns the selected item's name, or undef if no item was selected or an error occurred. Note that BrowseForFolder must be called as a standalone function, not as a method. Example:
-        # $folder = Win32::GUI::BrowseForFolder(
-                # -root => "C:\\Program Files",
-                # -includefiles => 1,
-        # );
-#
-# other options are... -computeronly, -domainonly, -driveonly, -editbox, -folderonly, -includefiles, -owner, -printeronly, -root, -title
-# What I was actually thinking of was
-# $ret = GUI::GetSaveFileName(
-    # -title  => "Save your newly generated Mail Merge Document.",
-    # -file   => "\0" . " " x 256,
-    # -filter => [
-        # "Word documents (*.doc)" => "*.doc",
-        # "All files", "*.*",
-    # ],
-# With another option in there, but I can't find it anywhere. Oh well, I am sure that browse for folder will work. Let me know how you get on.
-# Regards, Gerard.
-#
-# https://metacpan.org/pod/distribution/Win32-GUI/GENERATED/Win32/GUI/Reference/Methods.pod#BrowseForFolder
-#
-# -title => STRING
-    # the title for the dialog
-# -computeronly => 0/1 (default 0)
-    # only enable computers to be selected
-# -domainonly => 0/1 (default 0)
-    # only enable computers in the current domain or workgroup
-# -driveonly => 0/1 (default 0)
-    # only enable drives to be selected
-# -editbox => 0/1 (default 0)
-    # if 1, the dialog will include an edit field in which
-    # the user can type the name of an item
-# -folderonly => 0/1 (default 0)
-    # only enable folders to be selected
-# -includefiles => 0/1 (default 0)
-    # the list will include files as well folders
-# -newui => 0/1 (default 0)
-    # use the "new" user interface (which has a "New folder" button)
-# -nonewfolder => 0/1 (default 0)
-    # hides the "New folder" button (only meaningful with -newui => 1)
-# -owner => WINDOW
-    # A Win32::GUI::Window or Win32::GUI::DialogBox object specifiying the
-    # owner window for the dialog box
-# -printeronly => 0/1 (default 0)
-    # only enable printers to be selected
-# -directory => PATH
-    # the default start directory for browsing
-# -root => PATH or CONSTANT
-    # the root directory for browsing; this can be either a
-    # path or one of the following constants (minimum operating systems or
-    # Internet Explorer versions that support the constant are shown in
-    # square brackets. NT denotes Windows NT 4.0, Windows 2000, XP, etc.):
-        #
-        # CSIDL_FLAG_CREATE (0x8000)
-         # [2000/ME] Combining this with any of the constants below will create the folder if it does not already exist.
-     # CSIDL_ADMINTOOLS (0x0030)
-         # [2000/ME] Administrative Tools directory for current user
-     # CSIDL_ALTSTARTUP (0x001d)
-         # [All] Non-localized Startup directory in the Start menu for current user
-     # CSIDL_APPDATA (0x001a)
-         # [IE4] Application data directory for current user
-     # CSIDL_BITBUCKET (0x000a)
-         # [All] Recycle Bin
-     # CSIDL_CDBURN_AREA (0x003b)
-         # [XP] Windows XP directory for files that will be burned to CD
-     # CSIDL_COMMON_ADMINTOOLS (0x002f)
-         # [2000/ME] Administrative Tools directory for all users
-     # CSIDL_COMMON_ALTSTARTUP (0x001e)
-         # [All] Non-localized Startup directory in the Start menu for all users
-     # CSIDL_COMMON_APPDATA (0x0023)
-         # [2000/ME] Application data directory for all users
-     # CSIDL_COMMON_DESKTOPDIRECTORY (0x0019)
-         # [NT] Desktop directory for all users
-     # CSIDL_COMMON_DOCUMENTS (0x002e)
-         # [IE4] My Documents directory for all users
-     # CSIDL_COMMON_FAVORITES (0x001f)
-         # [NT] Favorites directory for all users
-     # CSIDL_COMMON_MUSIC (0x0035)
-         # [XP] Music directory for all users
-     # CSIDL_COMMON_PICTURES (0x0036)
-         # [XP] Image directory for all users
-     # CSIDL_COMMON_PROGRAMS (0x0017)
-         # [NT] Start menu "Programs" directory for all users
-     # CSIDL_COMMON_STARTMENU (0x0016)
-         # [NT] Start menu root directory for all users
-     # CSIDL_COMMON_STARTUP (0x0018)
-         # [NT] Start menu Startup directory for all users
-     # CSIDL_COMMON_TEMPLATES (0x002d)
-         # [NT] Document templates directory for all users
-     # CSIDL_COMMON_VIDEO (0x0037)
-         # [XP] Video directory for all users
-     # CSIDL_CONTROLS (0x0003)
-         # [All] Control Panel applets
-     # CSIDL_COOKIES (0x0021)
-         # [All] Cookies directory
-     # CSIDL_DESKTOP (0x0000)
-         # [All] Namespace root (shown as "Desktop", but is parent to my computer, control panel, my documents, etc.)
-     # CSIDL_DESKTOPDIRECTORY (0x0010)
-         # [All] Desktop directory (for desktop icons, folders, etc.) for the current user
-     # CSIDL_DRIVES (0x0011)
-         # [All] My Computer (drives and mapped network drives)
-     # CSIDL_FAVORITES (0x0006)
-         # [All] Favorites directory for the current user
-     # CSIDL_FONTS (0x0014)
-         # [All] Fonts directory
-     # CSIDL_HISTORY (0x0022)
-         # [All] Internet Explorer history items for the current user
-     # CSIDL_INTERNET (0x0001)
-         # [All] Internet root
-     # CSIDL_INTERNET_CACHE (0x0020)
-         # [IE4] Temporary Internet Files directory for the current user
-     # CSIDL_LOCAL_APPDATA (0x001c)
-         # [2000/ME] Local (non-roaming) application data directory for the current user
-     # CSIDL_MYMUSIC (0x000d)
-         # [All] My Music directory for the current user
-     # CSIDL_MYPICTURES (0x0027)
-         # [2000/ME] Image directory for the current user
-     # CSIDL_MYVIDEO (0x000e)
-         # [XP] Video directory for the current user
-     # CSIDL_NETHOOD (0x0013)
-         # [All] My Network Places directory for the current user
-     # CSIDL_NETWORK (0x0012)
-         # [All] Root of network namespace (Network Neighbourhood)
-     # CSIDL_PERSONAL (0x0005)
-         # [All] My Documents directory for the current user
-     # CSIDL_PRINTERS (0x0004)
-         # [All] List of installed printers
-     # CSIDL_PRINTHOOD (0x001b)
-         # [All] Network printers directory for the current user
-     # CSIDL_PROFILE (0x0028)
-         # [2000/ME] The current user's profile directory
-     # CSIDL_PROFILES (0x003e)
-         # [XP] The directory that holds user profiles (see CSDIL_PROFILE)
-     # CSIDL_PROGRAM_FILES (0x0026)
-         # [2000/ME] Program Files directory
-     # CSIDL_PROGRAM_FILES_COMMON (0x002b)
-         # [2000] Directory for files that are used by several applications. Usually Program Files\Common
-     # CSIDL_PROGRAMS (0x0002)
-         # [All] Start menu "Programs" directory for the current user
-     # CSIDL_RECENT (0x0008)
-         # [All] Recent Documents directory for the current user
-     # CSIDL_SENDTO (0x0009)
-         # [All] "Send To" directory for the current user
-     # CSIDL_STARTMENU (0x000b)
-         # [All] Start Menu root for the current user
-     # CSIDL_STARTUP (0x0007)
-         # [All] Start Menu "Startup" folder for the current user
-     # CSIDL_SYSTEM (0x0025)
-         # [2000/ME] System directory. Usually \Windows\System32
-     # CSIDL_TEMPLATES (0x0015)
-         # [All] Document templates directory for the current user
-     # CSIDL_WINDOWS (0x0024)
-         # [2000/ME] Windows root directory, can also be accessed via the environment variables %windir% or %SYSTEMROOT%.
-
-        my $ret = Win32::GUI::BrowseForFolder (
+        my $ret = Win32::GUI::BrowseForFolder (  # 选择 报告存放 的目录
                 -title      => "请选择保存路径",
                 # -editbox    => 1,
                 -directory  => $ConfigHash{OutputLoc},
@@ -1593,7 +1590,7 @@ sub RUN_Click{
         );
         return 0 unless $ret;
         $Output_Dir = $ret;
-        $ConfigHash{OutputLoc} = $ret;
+        $ConfigHash{OutputLoc} = $ret;  # 将 $ConfigHash{OutputLoc} 更新为 $ret
 
         $sb->Move( 0, ($main->ScaleHeight() - $sb->Height()) );
         $sb->Resize( $main->ScaleWidth(), $sb->Height() );
@@ -1602,15 +1599,17 @@ sub RUN_Click{
 
         %allele = ();
 
-        foreach my $PrevKey1(keys %PrevAllele){
-                foreach my $PrevKey2(keys %{$PrevAllele{$PrevKey1}}){
-                        $allele{$PrevKey1}{$PrevKey2} = $PrevAllele{$PrevKey1}{$PrevKey2};
+        foreach my $PrevKey1(keys %PrevAllele){  # %PrevAllele 保存已有数据中 每个 实验编码 的每个marker 对应的 型别信息
+            # $PrevKey1: 实验编码
+                foreach my $PrevKey2(keys %{$PrevAllele{$PrevKey1}}){  # $PrevKey2：marker
+                        $allele{$PrevKey1}{$PrevKey2} = $PrevAllele{$PrevKey1}{$PrevKey2};  # 将已有数据中 每个实验编码 的每个marker 对应的型别信息，存入 %allele
                         # print "Prev $PrevKey1|$PrevKey2|",$allele{$PrevKey1}{$PrevKey2},"\n";
                 }
         }
-        foreach my $ThisKey1(keys %ThisAllele){
-                foreach my $ThisKey2(keys %{$ThisAllele{$ThisKey1}}){
-                        $allele{$ThisKey1}{$ThisKey2} = $ThisAllele{$ThisKey1}{$ThisKey2};
+        foreach my $ThisKey1(keys %ThisAllele){  # %ThisAllele 存放 该实验编码 该marker 对应的型别信息
+            # $ThisKey1: 下机数据文件中的 实验编码
+                foreach my $ThisKey2(keys %{$ThisAllele{$ThisKey1}}){  # $ThisKey2：marker
+                        $allele{$ThisKey1}{$ThisKey2} = $ThisAllele{$ThisKey1}{$ThisKey2};  # 将 下机数据中 每个实验编码 的每个marker 对应的型别信息，存入 %allele
                         # print "This $ThisKey1|$ThisKey2|",$allele{$ThisKey1}{$ThisKey2},"\n";
                 }
         }
@@ -1618,30 +1617,43 @@ sub RUN_Click{
         my (%date4,%date1,%date2,%sample,%operation,%cells,%date3,%number,%rptnum,%name,%patient,%gender,%age,%diagnosis,%relation,%xnum,%hospital,%doctor,%hosptl_num,%bed_num);
         my %sheet_name;
 
-        foreach (keys %exp_id){
+        foreach (keys %exp_id){  # %exp_id，存放每个实验编码的原始顺序
+# 供患关系文件 的格式如下 ##############################################################################################################################################################################################################
+# 0收样日期	1生产时间	2移植日期	3样品类型	4样品性质	5分选类别	6采样日期	7实验编码	8报告单编号	9姓名	10供患关系	11性别	12年龄	13诊断	14亲缘关系	15关联样本编号	16医院编码	17送检医院	18送检医生  19住院号   20床号
+# 示例如下：
+# 收样日期	生产时间	移植日期	样品类型	样品性质	分选类别	采样日期	实验编码	报告单编号	姓名	供患关系	性别	年龄	诊断	亲缘关系	关联样本编号	医院编码	送检医院	送检医生  住院号   床号
+# 				术前			D19STR00039	QC-Q019	Q17	患者
+# 				术前			10751	QC-Q019		供者
+# 				术后			Q19	QC-Q019	Q19	患者							南京市儿童医院
+# 	2020/3/5		[其他]	术前		2020/3/3	D20STR01231	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人
+# 	2020/3/5		[其他]	术前		2020/3/3	D20STR01232	TCA2007498	吴文方	供者	男	44	-	弟弟
+# 2020/3/4	2020/3/5		骨髓血	术后		2020/3/3	D20STR01230	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人		广东省人民医院	黄励思
+# 	2018/6/8		全血	术前			STR1808282	TCA2007647	杨梅月	患者	女	不详		杨梅月	本人
+# 	2018/6/8		全血	术前			STR1810793	TCA2007647	杨梅	供者	女	不详		姐姐
 
-                my $number = $exp_id{$_};
+                # 获取当前 实验编码 在供患信息.txt 里的原始顺序
+                my $number = $exp_id{$_};  # $_ : 实验编码;
 
-                $date4{$_}     = $data_in[$number][0];       #收样日期
-                $date1{$_}     = $data_in[$number][1];       #生产时间
-                $date2{$_}     = $data_in[$number][2];       #移植日期
-                $sample{$_}    = $data_in[$number][3];
-                $operation{$_} = $data_in[$number][4];
-                $cells{$_}     = $data_in[$number][5];
-                $date3{$_}     = $data_in[$number][6];       #采样日期
-                $number{$_}    = $data_in[$number][7];
-                $rptnum{$_}    = $data_in[$number][8];
-                $name{$_}      = $data_in[$number][9];
-                $patient{$_}   = $data_in[$number][10];
-                $gender{$_}    = $data_in[$number][11];
-                $age{$_}       = $data_in[$number][12];
-                $diagnosis{$_} = $data_in[$number][13];
-                $relation{$_}  = $data_in[$number][14];
-                $xnum{$_}      = $data_in[$number][15];
-                $hospital{$_}  = $data_in[$number][17];
-                $doctor{$_}    = $data_in[$number][18];
-                $hosptl_num{$_}= $data_in[$number][19];
-                $bed_num{$_}   = $data_in[$number][20];
+                $date4{$_}     = $data_in[$number][0];       # 供患信息中 实验编码 对应的 收样日期
+                $date1{$_}     = $data_in[$number][1];       # 供患信息中 实验编码 对应的 生产时间
+                $date2{$_}     = $data_in[$number][2];       # 供患信息中 实验编码 对应的 移植日期
+                $sample{$_}    = $data_in[$number][3];       # 供患信息中 实验编码 对应的 样本类型
+                $operation{$_} = $data_in[$number][4];       # 供患信息中 实验编码 对应的 样品性质
+                $cells{$_}     = $data_in[$number][5];       # 供患信息中 实验编码 对应的 分选类型
+                $date3{$_}     = $data_in[$number][6];       # 供患信息中 实验编码 对应的 采样日期
+                $number{$_}    = $data_in[$number][7];       # 供患信息中 实验编码 对应的 实验编码
+                $rptnum{$_}    = $data_in[$number][8];       # 供患信息中 实验编码 对应的 报告单编号
+                $name{$_}      = $data_in[$number][9];       # 供患信息中 实验编码 对应的 姓名
+                $patient{$_}   = $data_in[$number][10];      # 供患信息中 实验编码 对应的 供患关系
+                $gender{$_}    = $data_in[$number][11];      # 供患信息中 实验编码 对应的 型别
+                $age{$_}       = $data_in[$number][12];      # 供患信息中 实验编码 对应的 年龄
+                $diagnosis{$_} = $data_in[$number][13];      # 供患信息中 实验编码 对应的 诊断
+                $relation{$_}  = $data_in[$number][14];      # 供患信息中 实验编码 对应的 亲缘关系
+                $xnum{$_}      = $data_in[$number][15];      # 供患信息中 实验编码 对应的 关联样本编号
+                $hospital{$_}  = $data_in[$number][17];      # 供患信息中 实验编码 对应的 送检医院
+                $doctor{$_}    = $data_in[$number][18];      # 供患信息中 实验编码 对应的 送检医生
+                $hosptl_num{$_}= $data_in[$number][19];      # 供患信息中 实验编码 对应的 住院号
+                $bed_num{$_}   = $data_in[$number][20];      # 供患信息中 实验编码 对应的 床号
         }
 
         $date4{'  '}     = '';
@@ -1670,16 +1682,14 @@ sub RUN_Click{
 
         $sb->Move( 0, ($main->ScaleHeight() - $sb->Height()) );
         $sb->Resize( $main->ScaleWidth(), $sb->Height() );
-        $sb->Text("正在生成文件...");
+        $sb->Text("正在生成文件...");  # 状态条，输出提示信息
 
         my $success = 1;
-
-
-        my @conclusion;
-        my @num1;
-        my @num2;
-        my @num3;
-        my @sheet;
+        my @conclusion;  # 存放 第几份 报告的结论
+        my @num1;  # 存放 第几份 报告对应的 "术前患者" 的实验编码
+        my @num2;  # 存放 第几份 报告对应的 "术前供者" 的实验编码
+        my @num3;  # 存放 第几份 报告对应的 "术后患者" 的实验编码
+        my @sheet;  # 存放 第几份 报告对应的 "患者姓名"
 
         # my @count_sum;
         my @count_n;
@@ -1688,45 +1698,53 @@ sub RUN_Click{
         my @marker_type;
         my @type;
         my @count;
-        foreach my $z(0 .. $#TCA_id){
-                my $TCAID = $TCA_id[$z];
-                if ($exp_error{$TCAID} == 1){
+        # 遍历每个 报告单编号
+        # $z: 第几个报告单编号
+        foreach my $z(0 .. $#TCA_id){  # @TCA_id:存储 供患信息.txt 中的报告单编号
+                my $TCAID = $TCA_id[$z];  # 获取 报告单编号
+                if ($exp_error{$TCAID} == 1){  # 跳过 存在实验问题的报告单编号
                         $conclusion[$z] = '跳过';
                         next;
                 }
-                # print STDERR $TCAID,"实验数：",$exp_num{$TCAID},"\n";
-                $RptBox -> Append('准备'.$TCAID.'...');
-                if ($exp_num{$TCAID} == 1){
+                print STDERR "L1775:",$TCAID,"实验数：",$exp_num{$TCAID},"\n";
+                $RptBox -> Append('准备'.$TCAID.'...');  # "生成报告" 部分的文本框中显示提示信息
+                if ($exp_num{$TCAID} == 1){  # 该 "报告单编号" 对应的 实验编码 个数 为 1（即 该报告单对应的实验个数）
+                        # 如果仅有一个 术后患者 样本，则不出报告，报错，输出提示信息
                         $conclusion[$z] = '无';
-                        my @seq = split ",", $exp_seq{$TCAID};
-                        unless (exists $allele{$exp_list[$seq[0]]}){
-                                $error = '下机数据中未找到编号'.$exp_list[$seq[0]].'的数据
-请检查！';
+                        my @seq = split ",", $exp_seq{$TCAID};  # 获取该 报告单编号 对应的 "术前患者" "术前供者" ("术后患者" 可能包括也可能不包括)在 供患信息.txt 中的序号
+                        unless (exists $allele{$exp_list[$seq[0]]}){  # 实验编码，在 %allele 中不存在
+                                # %allele: 已有数据 和 下机数据 中，每个实验编码 的每个 marker 对应的 型别信息
+                                # @exp_list：用于存储 供患信息.txt 中的实验编码
+                                # $seq[0]:该 报告单编号 对应的 "术前患者" 在 供患信息.txt 中的序号
+                                # $exp_list[$seq[0]]：获取该 报告单编号 对应的 "术前患者" 在 供患信息.txt 中的 实验编码
+                                # $allele{$exp_list[$seq[0]]}：获取 "术前患者" 所有marker 对应的 型别信息，返回值为 数组
+
+                                $error = '下机数据中未找到编号'.$exp_list[$seq[0]].'的数据请检查！';
                                 Win32::MsgBox $error, 0, "错误！";
                                 $success = 0;
                                 $RptBox -> Append("失败【下机数据不全】\r\n");
                                 $conclusion[$z] = '跳过';
                                 next;
                         }
-                        if ($data_in[$seq[0]][4] eq "术前"){
-                                if ($data_in[$seq[0]][10] eq "患者"){
-                                        $num1[$z] = $exp_list[$seq[0]];
+                        if ($data_in[$seq[0]][4] eq "术前"){  # 术前样本
+                                if ($data_in[$seq[0]][10] eq "患者"){  # 术前患者
+                                        $num1[$z] = $exp_list[$seq[0]];  # $exp_list[$seq[0]]：获取该 报告单编号 对应的 "术前患者" 在 供患信息.txt 中的 实验编码
                                         $num2[$z] = '  ';
                                         $num3[$z] = '  ';
                                         $sheet[$z] = $name{$num1[$z]};
-                                }else{
+                                }else{  # 术前供者
                                         $num1[$z] = '  ';
-                                        $num2[$z] = $exp_list[$seq[0]];
+                                        $num2[$z] = $exp_list[$seq[0]];  # $exp_list[$seq[0]]：获取该 报告单编号 对应的 "术前患者" 在 供患信息.txt 中的 实验编码
                                         $num3[$z] = '  ';
                                         $sheet[$z] = $name{$num2[$z]};
                                 }
-                        }else{
-                                if ($data_in[$seq[0]][10] eq "患者"){
+                        }else{  # 术后样本
+                                if ($data_in[$seq[0]][10] eq "患者"){  # 术后患者
                                         $num1[$z] = '  ';
                                         $num2[$z] = '  ';
                                         $num3[$z] = $exp_list[$seq[0]];
                                         $sheet[$z] = $name{$num3[$z]};
-                                }else{
+                                }else{  # 术后供者
                                         my $error  = "报告编号：".$TCAID."只包含一份显示为供者术后的样本。\n请检查，本次将不生成报告！\n";
                                         Win32::MsgBox $error, 0, "注意！";
                                         $RptBox -> Append("失败【术后供者】\r\n");
@@ -1736,28 +1754,38 @@ sub RUN_Click{
                         }
                         $RptBox -> Append("成功！\r\n");
                         # printf "%s|%s|%s|%s|%s\n",        $TCAID, $num1[$z], $num2[$z], $num3[$z], $sheet[$z];
-                }elsif ($exp_num{$TCAID} == 2){
+                }elsif ($exp_num{$TCAID} == 2){  # 报告单编号 对应 2个实验编码
                         $conclusion[$z] = '无';
-                        my @seq = split ",", $exp_seq{$TCAID};
-                        unless (exists $allele{$exp_list[$seq[0]]}){
-                                $error = '下机数据中未找到编号'.$exp_list[$seq[0]].'的数据
-请检查！';
+                        my @seq = split ",", $exp_seq{$TCAID};  # 获取该 报告单编号 对应的 "术前患者" "术前供者" ("术后患者" 可能包括也可能不包括)在 供患信息.txt 中的序号
+                        unless (exists $allele{$exp_list[$seq[0]]}){  # 第一个实验编码，在 %allele 中不存在
+                                # %allele: 已有数据 和 下机数据 中，每个实验编码 的每个 marker 对应的 型别信息
+                                # @exp_list：用于存储 供患信息.txt 中的实验编码
+                                # $seq[0]:该 报告单编号 对应的 "术前患者" 在 供患信息.txt 中的序号
+                                # $exp_list[$seq[0]]：获取该 报告单编号 对应的 "术前患者" 在 供患信息.txt 中的 实验编码
+                                # $allele{$exp_list[$seq[0]]}：获取 "术前患者" 所有marker 对应的 型别信息，返回值为 数组
+
+                                $error = '下机数据中未找到编号'.$exp_list[$seq[0]].'的数据请检查！';
                                 Win32::MsgBox $error, 0, "错误！";
                                 $success = 0;
                                 $RptBox -> Append("失败【下机数据不全】\r\n");
                                 $conclusion[$z] = '跳过';
                                 next;
                         }
-                        unless (exists $allele{$exp_list[$seq[1]]}){
-                                $error = '下机数据中未找到编号'.$exp_list[$seq[1]].'的数据
-请检查！';
+                        unless (exists $allele{$exp_list[$seq[1]]}){  # 第二个实验编码，在 %allele 中不存在
+                                $error = '下机数据中未找到编号'.$exp_list[$seq[1]].'的数据请检查！';
                                 Win32::MsgBox $error, 0, "错误！";
                                 $success = 0;
                                 $RptBox -> Append("失败【下机数据不全】\r\n");
                                 $conclusion[$z] = '跳过';
                                 next;
                         }
-                        my $sum = 0;
+
+                        my $sum = 0;  # "术前患者" = 4 ; "术前供者" = 8; "术后患者" = 6; "术后供者" = 10
+                        # "术前患者" + "术前供者" = 12
+                        # "术前患者" + "术后患者" = 10
+                        # "术前供者" + "术后患者" = "术前患者" + "术后供者" = 14
+                        # "术后患者" + "术后供者" = 16
+                        # "术前供者" + "术后供者" = 18
                         foreach my $i(@seq){
                                 if ($data_in[$i][4] eq "术前"){
                                         $sum += 0;
@@ -1770,24 +1798,23 @@ sub RUN_Click{
                                         $sum += 8;
                                 }
                         }
-                        if ($sum == 12){
-                                $num1[$z] = $exp_list[$seq[0]];
-                                $num2[$z] = $exp_list[$seq[1]];
+                        if ($sum == 12){  # "术前患者" + "术前供者"
+                                $num1[$z] = $exp_list[$seq[0]];  # $exp_list[$seq[0]]：获取该 报告单编号 对应的 "术前患者" 在 供患信息.txt 中的 实验编码
+                                $num2[$z] = $exp_list[$seq[1]];  # $exp_list[$seq[1]]：获取该 报告单编号 对应的 "术前供者" 在 供患信息.txt 中的 实验编码
                                 $num3[$z] = '  ';
-                                $sheet[$z] = $name{$num1[$z]};
-                        }elsif($sum == 10){
-                                $num1[$z] = $exp_list[$seq[0]];
+                                $sheet[$z] = $name{$num1[$z]};   # 存放 第几份 报告对应的 "患者姓名"
+                        }elsif($sum == 10){  # "术前患者" + "术后患者"
+                                $num1[$z] = $exp_list[$seq[0]];  # 存放 第几份 报告对应的 "术前患者" 在 供患信息.txt 中的 实验编码
                                 $num2[$z] = '  ';
-                                $num3[$z] = $exp_list[$seq[1]];
-                                $sheet[$z] = $name{$num1[$z]};
-                        }elsif($sum == 14){
+                                $num3[$z] = $exp_list[$seq[1]];  # 存放 第几份 报告对应的 "术后患者" 在 供患信息.txt 中的 实验编码
+                                $sheet[$z] = $name{$num1[$z]};   # 存放 第几份 报告对应的 "患者姓名"
+                        }elsif($sum == 14){  # "术前供者" + "术后患者" = "术前患者" + "术后供者" = 14  ("术前患者" + "术后供者" ??)
                                 $num1[$z] = '  ';
-                                $num2[$z] = $exp_list[$seq[0]];
-                                $num3[$z] = $exp_list[$seq[1]];
-                                $sheet[$z] = $name{$num3[$z]};
+                                $num2[$z] = $exp_list[$seq[0]];  # 存放 第几份 报告对应的 "术前供者" 在 供患信息.txt 中的 实验编码
+                                $num3[$z] = $exp_list[$seq[1]];  # 存放 第几份 报告对应的 "术后患者" 在 供患信息.txt 中的 实验编码
+                                $sheet[$z] = $name{$num3[$z]};   # 存放 第几份 报告对应的 "患者姓名"
                         }else{
-                                my $error  = "报告编号：".$TCAID."包含一份显示为供者术后的样本。
-请检查，本次将不生成报告！";
+                                my $error  = "报告编号：".$TCAID."包含一份显示为供者术后的样本。请检查，本次将不生成报告！";
                                 Win32::MsgBox $error, 0, "注意！";
                                 $RptBox -> Append("失败【术后供者】\r\n");
                                 $conclusion[$z] = '跳过';
@@ -1798,15 +1825,15 @@ sub RUN_Click{
                         #上面通过计数器来判断2个样本的情况分属患者还是供者
                         ####
                         # printf "%s|%s|%s|%s|%s\n",        $TCAID, $num1[$z], $num2[$z], $num3[$z],$sheet[$z];
-                }elsif ($exp_num{$TCAID} == 3){
+                }elsif ($exp_num{$TCAID} == 3){  # 报告单编号 对应 3个实验编码
                         my @seq = split ",", $exp_seq{$TCAID};
                         # print $exp_list[$seq[0]],"|", $allele{$exp_list[$seq[0]]}{D7S820},"\n";
                         # print $exp_list[$seq[1]],"|", $allele{$exp_list[$seq[1]]}{D7S820},"\n";
                         # print $exp_list[$seq[2]],"|", $allele{$exp_list[$seq[2]]}{D7S820},"\n";
 
+                        # 检查 3个实验编码 在 %allele 中是否存在
                         unless (exists $allele{$exp_list[$seq[0]]}){
-                                $error = '下机数据中未找到编号'.$exp_list[$seq[0]].'的数据
-请检查！';
+                                $error = '下机数据中未找到编号'.$exp_list[$seq[0]].'的数据请检查！';
                                 Win32::MsgBox $error, 0, "错误！";
                                 $success = 0;
                                 $RptBox -> Append("失败【下机数据不全】\r\n");
@@ -1814,8 +1841,7 @@ sub RUN_Click{
                                 next;
                         }
                         unless (exists $allele{$exp_list[$seq[1]]}){
-                                $error = '下机数据中未找到编号'.$exp_list[$seq[1]].'的数据
-请检查！';
+                                $error = '下机数据中未找到编号'.$exp_list[$seq[1]].'的数据请检查！';
                                 Win32::MsgBox $error, 0, "错误！";
                                 $success = 0;
                                 $RptBox -> Append("失败【下机数据不全】\r\n");
@@ -1823,20 +1849,20 @@ sub RUN_Click{
                                 next;
                         }
                         unless (exists $allele{$exp_list[$seq[2]]}){
-                                $error = '下机数据中未找到编号'.$exp_list[$seq[2]].'的数据
-请检查！';
+                                $error = '下机数据中未找到编号'.$exp_list[$seq[2]].'的数据请检查！';
                                 Win32::MsgBox $error, 0, "错误！";
                                 $success = 0;
                                 $RptBox -> Append("失败【下机数据不全】\r\n");
                                 $conclusion[$z] = '跳过';
                                 next;
                         }
-                        $num1[$z] = $exp_list[$seq[0]];
-                        $num2[$z] = $exp_list[$seq[1]];
-                        $num3[$z] = $exp_list[$seq[2]];
-                        $sheet[$z] = $name{$num1[$z]};
+
+                        $num1[$z] = $exp_list[$seq[0]];  # 存放 第几份 报告对应的 "术前患者" 在 供患信息.txt 中的 实验编码
+                        $num2[$z] = $exp_list[$seq[1]];  # 存放 第几份 报告对应的 "术前供者" 在 供患信息.txt 中的 实验编码
+                        $num3[$z] = $exp_list[$seq[2]];  # 存放 第几份 报告对应的 "术后患者" 在 供患信息.txt 中的 实验编码
+                        $sheet[$z] = $name{$num1[$z]};   # 存放 第几份 报告对应的 "患者姓名"
                         # printf "%s|%s|%s|%s|%s\n",        $TCAID, $num1, $num2, $num3,$sheet;
-                }else{
+                }else{  # 超过 3个 实验编码的 报告单编号，报错，提示错误信息，同时跳过该 报告单
                         my $error  = "报告编号：".$TCAID."的实验样本编号过多！请检查！\n";
                         Win32::MsgBox $error, 0, "注意！";
                         $RptBox -> Append("失败【样本过多】\r\n");
@@ -1845,11 +1871,12 @@ sub RUN_Click{
                 }
                 # print $num2,"|",$relation{$num2},"\n";
                 # $count_sum[$z] = 0;
-                $count_n[$z] = 0;
-                $count_avg[$z] = 0;
-                $SD[$z] = 0;
+                $count_n[$z] = 0;  # 记录每份报告 有嵌合率结果的位点（有效位点）个数
+                $count_avg[$z] = 0;  # 记录每份报告 有效位点的嵌合率 的平均值
+                $SD[$z] = 0;  # 记录每份报告 有效位点的嵌合率 的SD
 
-                my $errorcount = 0;
+                my $errorcount = 0;  # 存在错误的marker位点个数
+                # 遍历该 报告单编号 对应的每个marker位点
                 foreach my $k (0..$#markers){
 
                         # if ($conclusion[$z]){
@@ -1864,16 +1891,17 @@ sub RUN_Click{
                         # print $num3[$z],"|",$allele{$num3[$z]}{$markers[$k]},"\n";
                         # print $num3[$z],"|",$area{$num3[$z]}{$markers[$k]},"\n";
 
-                        my @allele1 = split/、/, $allele{$num1[$z]}{$markers[$k]};
-                        $alleles_before{$_} = 1 foreach @allele1;
-                        my @allele2 = split/、/, $allele{$num2[$z]}{$markers[$k]};
-                        $alleles_before{$_} = 1 foreach @allele2;
-                        my @allele3 = split/、/, $allele{$num3[$z]}{$markers[$k]};
+                        my @allele1 = split/、/, $allele{$num1[$z]}{$markers[$k]};  # 获取该报告单 "术前患者" 每个位点的型别
+                        $alleles_before{$_} = 1 foreach @allele1;  # 将 "术前患者" 每个位点出现的genotype 标记为 1. 用 %alleles_before 记录。
+                        my @allele2 = split/、/, $allele{$num2[$z]}{$markers[$k]};  # 获取该报告单 "术前供者" 每个位点的型别
+                        $alleles_before{$_} = 1 foreach @allele2;  # 将 "术前供者" 每个位点出现的genotype 标记为 1. 用 %alleles_before 记录。
+                        my @allele3 = split/、/, $allele{$num3[$z]}{$markers[$k]};  # 获取该报告单 "术后患者" 每个位点的型别
 
+                        # 判断 "术后患者" 是否存在 "术前患者" and "术前供者" 中均未出现的 genotype
                         foreach (@allele3){
-                                if (!exists $alleles_before{$_}){
-                                        $type[$z][$k] = "error";
-                                        $count[$z][$k] = "error";
+                                if (!exists $alleles_before{$_}){  # 如果出现"术前患者" and "术前供者" 中均未出现的 genotype，则计数 存在错误的marker位点个数
+                                        $type[$z][$k] = "error";  # 将 第几份报告单 的 第几个marker 位点的type状态 标记为 "error"
+                                        $count[$z][$k] = "error";  # 将 第几份报告单 的 第几个marker 位点的count状态 标记为 "error"
                                         $errorcount ++;
                                         last;
                                 }
@@ -1904,17 +1932,18 @@ sub RUN_Click{
                         # print "\n";
                 }
 
+                # 如果 存在错误的位点个数 >= 6，则报错，提示错误信息，跳过该报告单
                 if ($errorcount >= 6){
                         $success = 0;
-                        $error = '报告单号'.$TCAID.'的16个位点中
-'.$errorcount.'个分型错误！请检查！
-将跳过出具此份报告。';
+                        $error = '报告单号'.$TCAID.'的16个位点中'.$errorcount.'个分型错误！请检查！将跳过出具此份报告。';
                         Win32::MsgBox $error, 0, "注意";
                         $RptBox -> Append("失败【分型数据错误】\r\n");
                         $conclusion[$z] = '跳过';
                         next;
                 }
 
+                # 遍历每个位点，判断每个位点的组成类型 存入 %type
+                # 遍历每个位点，根据位点组成类型，计算其 嵌合率 存入 %count
                 foreach my $k (0..$#markers){
                         next if $count[$z][$k] eq 'error';
                         my @allele1 = split/、/, $allele{$num1[$z]}{$markers[$k]};
@@ -2069,19 +2098,25 @@ sub RUN_Click{
                         }
                 }
                 # <STDIN>;
+
+                # 判断 报告单编号 的结论是否为空
                 if ($conclusion[$z]){
+                        # 跳过 结论为 '跳过' 的报告单
                         if ($conclusion[$z] eq '跳过'){
                                 next;
                         }
                 }
-                my @temp_marker = ();
-                my @tempcount = ();
+
+################################################  2020.05.22.16.18 ################################################
+
+                my @temp_marker = ();  # 记录每个marker 是 '混合嵌合' 还是 ' '（完全嵌合）
+                my @tempcount = ();  # 记录每份报告 有嵌合率结果位点 的嵌合率
                 foreach my $k (0..$#markers){
                         if ($count[$z][$k] =~ /\d/){
                                 # $count_sum[$z] += $count[$z][$k];
                                 # $count_n[$z] += 1;
                                 push @tempcount, $count[$z][$k];
-                                if ($count[$z][$k]<1 && $count[$z][$k]>0){
+                                if ($count[$z][$k]<1 && $count[$z][$k]>0){  # 位点的嵌合率在 0-1之间，定义为 '混合嵌合'
                                         $temp_marker[$k] = '混合嵌合';
                                 }else{
                                         $temp_marker[$k] = ' ';
@@ -2092,16 +2127,16 @@ sub RUN_Click{
                 }
 
                 foreach my $k (0..$#markers){
-                        $marker_type[$z][$k] = $temp_marker[$k];
+                        $marker_type[$z][$k] = $temp_marker[$k];  # 记录 第几个报告单编号 的第几个marker 的状态：'混合嵌合' / ' ' (完全嵌合)
                 }
-                $count_n[$z] = scalar(@tempcount);
-                if ($count_n[$z] > 0){
-                        ($count_avg[$z], $SD[$z]) = &Avg_SD(@tempcount);
+                $count_n[$z] = scalar(@tempcount);  # 记录每份报告 有嵌合率结果的位点个数
+
+                if ($count_n[$z] > 0){  # 该报告单编号 对应的有效位点（有嵌合率结果的位点）> 0
+                        ($count_avg[$z], $SD[$z]) = &Avg_SD(@tempcount);  # 计算所有嵌合位点，嵌合率的均值 和 SD，分别存入 $count_avg[$z], $SD[$z]
                         $count_avg[$z] = sprintf("%.4f", $count_avg[$z]);
-                }else{
+                }else{  # 该报告单编号 没有 有效位点，报错，提示无法出具此份报告，跳过该报告单
                         $success = 0;
-                        $error = '报告单号'.$TCAID.'没有有效位点，请检查！
-将跳过出具此份报告。';
+                        $error = '报告单号'.$TCAID.'没有有效位点，请检查！将跳过出具此份报告。';
                         Win32::MsgBox $error, 0, "注意";
                         $RptBox -> Append("失败【无有效位点】\r\n");
                         $conclusion[$z] = '跳过';
@@ -2113,21 +2148,21 @@ sub RUN_Click{
                         # $count_avg[$z] = sprintf("%.4f", $count_avg[$z]);
                 # }
 
-                $RptBox -> Append("成功！\r\n");
-                next if $exp_num{$TCAID} != 3;
+                $RptBox -> Append("成功！\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息 "成功！"
+                next if $exp_num{$TCAID} != 3;  # 如果该 报告单编号 对应的实验编码个数 不为3，则跳过将本次实验的结果保存在内存中，跳到下一个报告单编号
                 ##追加本次实验结果到内存中
-                next if $count_avg[$z] !~ /\d/;
-                my $tempid = $identity{$TCAID};
-                push @{$Chimerism{$tempid}}, sprintf ("%.2f%s", $count_avg[$z]*100,"%");
-                push @{$SampleID{$tempid}}, $num3[$z];
-                push @{$ReportDate{$tempid}}, sprintf ("%d-%02d-%02d", $year, $mon, $mday);
-                if ($cells{$num3[$z]} ne "-"){
-                        $sampleType{$num3[$z]} = $cells{$num3[$z]};
-                }else{
-                        $sampleType{$num3[$z]} = $sample{$num3[$z]};
+                next if $count_avg[$z] !~ /\d/;  # 如果该 报告单编号 对应的平均嵌合率 不是数字（什么情况？），则跳过将本次实验的结果保存在内存中，跳到下一个报告单编号
+                my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                push @{$Chimerism{$tempid}}, sprintf ("%.2f%s", $count_avg[$z]*100,"%");  # 将该 患者编码 对应的嵌合结果（有效位点嵌合率的平均值）存入$Chimerism{$tempid}
+                push @{$SampleID{$tempid}}, $num3[$z];  # 记录该 患者编码 对应的 "术后患者" 实验编码，存入 $SampleID{$tempid}
+                push @{$ReportDate{$tempid}}, sprintf ("%d-%02d-%02d", $year, $mon, $mday);  # 记录该 患者编码 对应的 报告日期，存入 $ReportDate{$tempid}
+                if ($cells{$num3[$z]} ne "-"){  # "术后患者" 的 "分选类型" 不为 "-"
+                        $sampleType{$num3[$z]} = $cells{$num3[$z]};  # 将 "术后患者" 实验编码 对应的 "样本类型" 设置为 供患信息中 实验编码 对应的 分选类型
+                }else{  # "术后患者" 的 "分选类型" 为 "-"
+                        $sampleType{$num3[$z]} = $sample{$num3[$z]};  # 将 "术后患者" 实验编码 对应的 "样本类型" 设置为 供患信息中 实验编码 对应的 样本类型
                 }
-                $receiveDate{$num3[$z]} = DateUnify($date1{$num3[$z]});
-                $sampleDate{$num3[$z]} = DateUnify($date3{$num3[$z]});
+                $receiveDate{$num3[$z]} = DateUnify($date1{$num3[$z]});  # 将 "术后患者" 实验编码 对应的 "收样日期" 设置为 供患信息中 实验编码 对应的 生产时间  （用生产日期 设置 收样日期 ？）
+                $sampleDate{$num3[$z]} = DateUnify($date3{$num3[$z]});  # 将 "术后患者" 实验编码 对应的 "采样日期" 设置为 供患信息中 实验编码 对应的 采样日期
                 ##坐等追加到总表中
                 # print $tempid,"\n";
                 # print "Chimerism ";print $_,"|" foreach (@{$Chimerism{$tempid}});print "\n";
@@ -2137,19 +2172,24 @@ sub RUN_Click{
                 # print "ReportDate ";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
 
         }
-        my $chimerismSummary = sprintf "嵌合率汇总-%4d%02d%02d.txt",$year, $mon, $mday;
+        my $chimerismSummary = sprintf "嵌合率汇总-%4d%02d%02d.txt",$year, $mon, $mday;  # 重写写一个 嵌合率汇总 的结果文件
         open SUM,"> $chimerismSummary";
         print SUM "姓名\t医院\t样本类型\t样本编号\t报告编号\t嵌合率\t有效位点\tSD\tCV\n";
 
-        $RptBox -> Append("输出准备完成！开始输出报告\r\n========================\r\n");
+################################################  2020.05.22.17.04 ################################################
+        $RptBox -> Append("输出准备完成！开始输出报告\r\n========================\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
+        # 遍历输出每一份报告
         foreach my $z(0..$#TCA_id){
-                my $TCAID = $TCA_id[$z];
-                $RptBox -> Append($TCAID.'...');
-                if ($conclusion[$z] eq '跳过'){
+                my $TCAID = $TCA_id[$z];  # 获取 报告单编号
+                $RptBox -> Append($TCAID.'...');  # 更新 "生成报告" 部分的文本框中显示的提示信息
+                if ($conclusion[$z] eq '跳过'){  # 跳过 结论为 "跳过" 的报告单
                         $RptBox -> Append("跳过\r\n");
                         next;
                 }
-                if (exists $sheet_name{$sheet[$z]}){
+                # %sheet_name:
+                # 一批检测中 同一个 "患者姓名" 按照 CSTB 的设计，会对应多份 报告单(即, 对应多个 报告单编号)
+                # 定义 报告单 输出文件
+                if (exists $sheet_name{$sheet[$z]}){  # @sheet: 存放 第几份 报告对应的 "患者姓名"
                         $sheet_name{$sheet[$z]} += 1;
                         $Output_rpt_str = sprintf "%s\\%s-%s%s%d.xlsx", $Output_Dir, $TCAID, $sheet[$z], 'AK', $sheet_name{$sheet[$z]};
                 }else{
@@ -2157,17 +2197,18 @@ sub RUN_Click{
                         $sheet_name{$sheet[$z]} = 1;
                 }
 
+################################################  2020.05.22.17.28 ################################################
                 my $workbook;
+                # 打开 报告输出文件，准备写报告
                 unless ($workbook = Excel::Writer::XLSX->new($Output_rpt_str)){
-                        $error = $Output_rpt_str."
-无法保存！";
+                        $error = $Output_rpt_str."无法保存！";
                         Win32::MsgBox $error, 0, "错误！";
                         $success = 0;
                         $RptBox -> Append($Output_rpt_str."打开失败！跳过\r\n");
                         next;
                 }
 
-
+                ###################  定义excel文件各部分的格式  #######################################################
                 my $format1  = $workbook->add_format(size => 18, bold => 1, align => 'center',                      font => decode('GB2312','楷体')); # HLA高分辨基因分型检测报告
                 my $format2  = $workbook->add_format(size => 11,                                                                                     'top' => 1, 'bottom' => 2);  # 双线
                 my $format3  = $workbook->add_format(size => 11,            align => 'right',  valign => 'vcenter', font => decode('GB2312','宋体')); # 报告单编号
@@ -2188,7 +2229,7 @@ sub RUN_Click{
                 my $format18 = $workbook->add_format(size => 11,                               valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 0, 'right' => 1); # 检测结论
                 my $format19 = $workbook->add_format(size => 8, valign => 'vcenter', font => decode('GB2312','华文中宋'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1, 'text_wrap' => 1,); #备注
 
-                #####chart的格式#####
+                #########################  chart的格式 ############################
                 my $Gfmt1 = $workbook->add_format(size => 10, align => 'right', font => decode('GB2312','宋体'));  # chart患者姓名
                 my $Gfmt2 = $workbook->add_format(size => 14, bold => 1, align => 'center', font => decode('GB2312','宋体')); # chart姓名
                 my $Gfmt3 = $workbook->add_format(size => 12, bold => 1, align => 'center', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1);# chart表头
@@ -2203,21 +2244,26 @@ sub RUN_Click{
 
                 my ($countsheet, $graphic, $worksheet, $graphic_temp);
                 $worksheet  = $workbook ->add_worksheet(decode('GB2312',"报告"));
-                if ($exp_num{$TCAID} == 3 && $sheet_name{$sheet[$z]} == 1){
+                # 同一个 "患者姓名" 仅在第一份报告单中 输出 "嵌合曲线" 和 "tmp" 表单
+                if ($exp_num{$TCAID} == 3 && $sheet_name{$sheet[$z]} == 1){  # 报告单编号 对应 3个 实验编码，同时 $sheet[$z] 对应的 "患者姓名" 的第一份报告
                         $graphic = $workbook ->add_worksheet(decode('GB2312',"嵌合曲线"));
                 }
                 $countsheet = $workbook->add_worksheet(decode('GB2312',"计算"));
-                if ($exp_num{$TCAID} == 3 && $sheet_name{$sheet[$z]} == 1){
+                if ($exp_num{$TCAID} == 3 && $sheet_name{$sheet[$z]} == 1){  # 报告单编号 对应 3个 实验编码，同时 $sheet[$z] 对应的 "患者姓名" 的第一份报告
                         $graphic_temp = $workbook->add_worksheet('temp');
                 }
 
-                $countsheet->hide_gridlines();
-                $countsheet->keep_leading_zeros();
+                $countsheet->hide_gridlines();  # "计算" 表单中，隐藏网格线
+                $countsheet->keep_leading_zeros();  # "计算"表单中，保留数字开头的0
 
+ ===================== 输出 "计算" 表单 ==================================================
+                # 定义 "计算" 表单里的单元格格式
                 my $format101 = $workbook->add_format(size  => 11, font  => decode('GB2312','宋体'));
                 my $format102 = $workbook->add_format(size  => 11, align => 'center', font  => decode('GB2312','宋体'));
                 my $format103 = $workbook->add_format(size  => 11, color => 'red', font   => decode('GB2312','宋体'));
 
+                # 写 "计算" 表单
+                # 写标题
                 $countsheet->write('A01',decode('GB2312','位点'), $format101);
                 $countsheet->merge_range('B1:C1', decode('GB2312','患者'), $format102);
                 $countsheet->merge_range('D1:E1', decode('GB2312','供者'), $format102);
@@ -2235,9 +2281,12 @@ sub RUN_Click{
                 $countsheet->write('S2', 'ERROR',  $format101);
                 $countsheet->write('T1',decode('GB2312','总嵌合率'), $format101);
 
+################################################  2020.05.24.14.32 ################################################
+                # 从第一列的三行开始，将 marker名 写入第一列
                 for my $j (0..$#markers){
                         $countsheet->write($j+2,0,$markers[$j], $format101);
                 }
+                # 遍历写入每个 marker "术前患者" "术前供者" "术后患者" 样本的 型别(%allele)、面积(%area)、状态(%type)、嵌合率(%count)
                 foreach my $k (0..$#markers){
                         my @allele1 = split/、/, $allele{$num1[$z]}{$markers[$k]};
                         my @allele2 = split/、/, $allele{$num2[$z]}{$markers[$k]};
@@ -2277,9 +2326,11 @@ sub RUN_Click{
                         }
                 }
 
-        ##############################################################################
+########################################### 输出 "报告" 表单 ##########################################################
+                # 定义 "报告" 表单的各种格式
                 $worksheet->hide_gridlines();
                 $worksheet->keep_leading_zeros();
+                # 设置 列的宽度、行的高度
                 $worksheet->set_column(0,0,0.5);
                 $worksheet->set_column(1,1,14.5);
                 $worksheet->set_column(2,2,10);
@@ -2290,9 +2341,12 @@ sub RUN_Click{
                 my @rows = (73,8,3,18.4,22.8,22.8,10,16.2,16.2,16.2,16.2,16.2,10,18.6,18.6,18.6,18.6,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,39,57.6,12.6,25,25);
                 for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
 
+                # 设置页面的左右及上边距
                 $worksheet->set_margin_left(0.394);
                 $worksheet->set_margin_right(0.394);
                 $worksheet->set_margin_top(0.2);
+
+                # 设置表单的 页脚
                 #my $footer = '&R'.decode('GB2312',$name{$num3[$z]}.'-'.$hospital{$num3[$z]}.'（'.$doctor{$num3[$z]}.'），第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
                 my $footer = '&L'.decode('GB2312','检验实验室：荻硕贝肯检验实验室')."\n".
                              #'&R'.decode('GB2312','CSTB-B-R-0021-1.0')."\n".
@@ -2300,8 +2354,11 @@ sub RUN_Click{
                              '&R'.decode('GB2312',$name{$num3[$z]}.'，第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
 
                 $worksheet->set_footer($footer);
+
+                # 在第一行第二列插入 公司logo (pic/荻硕贝肯logo.png)
                 $worksheet->insert_image('B1', "pic/荻硕贝肯logo.png", 10, 10, 0.73, 0.73);
 
+                # 写入 各项信息
                 $worksheet->merge_range('B1:I1', decode('GB2312','嵌合状态分析报告'), $format1);
                 $worksheet->merge_range('B3:I3', decode('GB2312',''), $format2);
                 $worksheet->merge_range('G4:I4', decode('GB2312','报告单号：'.$rptnum{$num3[$z]}.'   '),$format3);
@@ -2314,86 +2371,93 @@ sub RUN_Click{
                      }
                 $worksheet->write('I05',decode('GB2312',$doctor{$num3[$z]}),$format4);
                 my $testt;
-                if ($cells{$num3[$z]} =~ /(\S+)分选/){
-                    $testt = $1.'嵌合状态分析';
-                    }
+                if ($cells{$num3[$z]} =~ /(\S+)分选/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞分选 / T细胞分选 / NK细胞分选 ...)
+                    $testt = $1.'嵌合状态分析';  # 根据 "分选类型" 动态输出 "检测项目"
+                }
                 else{
                     $testt = '全血嵌合状态分析';
-                    }
-                $worksheet->merge_range('C6:I6', decode('GB2312',$testt),$format5);
-                $worksheet->merge_range('B8:I8', decode('GB2312','样本信息'),$format7);
-                $worksheet->write('B09',decode('GB2312','样本编号'),$format6);
-                $worksheet->write('C09',decode('GB2312','姓名'),$format6);
-                $worksheet->write('D09',decode('GB2312','性别'),$format6);
-                $worksheet->write('E09',decode('GB2312','年龄'),$format6);
-                $worksheet->write('F09',decode('GB2312','样本类型'),$format6);
-                $worksheet->write('G09',decode('GB2312','采样日期'),$format6);
-                $worksheet->write('H09',decode('GB2312','收样日期'),$format6);
-                $worksheet->write('I09',decode('GB2312','关系'),$format6);
-                $worksheet->write('B10',decode('GB2312',$number{$num3[$z]}),$format10);
-                $worksheet->write('B11',decode('GB2312',$number{$num2[$z]}),$format10);
-                $worksheet->write('C10',decode('GB2312',$name{$num3[$z]}),$format6);
-                $worksheet->write('C11',decode('GB2312',$name{$num2[$z]}),$format6);
-                $worksheet->write('D10',decode('GB2312',$gender{$num3[$z]}),$format6);
-                $worksheet->write('D11',decode('GB2312',$gender{$num2[$z]}),$format6);
-                $worksheet->write('E10',decode('GB2312',$age{$num3[$z]}),$format6);
-                $worksheet->write('E11',decode('GB2312',$age{$num2[$z]}),$format6);
-                $worksheet->write('F10',decode('GB2312',$sample{$num3[$z]}),$format6);  #####################
-                $worksheet->write('F11',decode('GB2312',$sample{$num2[$z]}),$format6);  #####################
-                $worksheet->write('G10',decode('GB2312',DateUnify($date3{$num3[$z]})),$format10);
-                $worksheet->write('G11',decode('GB2312',DateUnify($date3{$num2[$z]})),$format10);
-                $worksheet->write('H10',decode('GB2312',DateUnify($date4{$num3[$z]})),$format10);
-                $worksheet->write('H11',decode('GB2312',DateUnify($date4{$num2[$z]})),$format10);
-                $worksheet->write('B12',decode('GB2312','住院/门诊号'),$format6);
-                $worksheet->write('E12',decode('GB2312','床号'),$format6);
-                $worksheet->write('G12',decode('GB2312','临床诊断'),$format6);
-                $worksheet->merge_range('C12:D12', decode('GB2312',$hosptl_num{$num3[$z]}), $format7);
-                $worksheet->write('F12',decode('GB2312',$bed_num{$num3[$z]}),$format6);
+                }
+                $worksheet->merge_range('C6:I6', decode('GB2312',$testt),$format5);  # 写入 "检测项目" 内容
+                $worksheet->merge_range('B8:I8', decode('GB2312','样本信息'),$format7);  # 写入 "样本信息" 表头
+                $worksheet->write('B09',decode('GB2312','样本编号'),$format6);  # 写入 "样本编号" 表头
+                $worksheet->write('C09',decode('GB2312','姓名'),$format6);  # 写入 "姓名" 表头
+                $worksheet->write('D09',decode('GB2312','性别'),$format6);  # 写入 "型别" 表头
+                $worksheet->write('E09',decode('GB2312','年龄'),$format6);  # 写入 "年龄" 表头
+                $worksheet->write('F09',decode('GB2312','样本类型'),$format6);  # 写入 "样本类型" 表头
+                $worksheet->write('G09',decode('GB2312','采样日期'),$format6);  # 写入 "采样日期" 表头
+                $worksheet->write('H09',decode('GB2312','收样日期'),$format6);  # 写入 "收样日期" 表头
+                $worksheet->write('I09',decode('GB2312','关系'),$format6);  # 写入 "关系" 表头
+                $worksheet->write('B10',decode('GB2312',$number{$num3[$z]}),$format10);  # 写入 "术后患者" 实验编码 (报告中标题是 "样本编号"，最好统一起来)
+                $worksheet->write('B11',decode('GB2312',$number{$num2[$z]}),$format10);  # 写入 "术前供者" 实验编码
+                $worksheet->write('C10',decode('GB2312',$name{$num3[$z]}),$format6);  # 写入 "术后患者" 姓名
+                $worksheet->write('C11',decode('GB2312',$name{$num2[$z]}),$format6);  # 写入 "术前供者" 姓名
+                $worksheet->write('D10',decode('GB2312',$gender{$num3[$z]}),$format6);  # 写入 "术后患者" 性别
+                $worksheet->write('D11',decode('GB2312',$gender{$num2[$z]}),$format6);  # 写入 "术前供者" 性别
+                $worksheet->write('E10',decode('GB2312',$age{$num3[$z]}),$format6);  # 写入 "术后患者" 年龄
+                $worksheet->write('E11',decode('GB2312',$age{$num2[$z]}),$format6);  # 写入 "术前供者" 年龄
+                $worksheet->write('F10',decode('GB2312',$sample{$num3[$z]}),$format6);  # "术后患者" 在供患信息中 实验编码 对应的 样本类型
+                $worksheet->write('F11',decode('GB2312',$sample{$num2[$z]}),$format6);  # "术前供者" 在供患信息中 实验编码 对应的 样本类型
+                $worksheet->write('G10',decode('GB2312',DateUnify($date3{$num3[$z]})),$format10);  # "术后患者" 的采样日期 设置为 供患信息中 实验编码 对应的 采样日期
+                $worksheet->write('G11',decode('GB2312',DateUnify($date3{$num2[$z]})),$format10);  # "术前供者" 的采样日期 设置为 供患信息中 实验编码 对应的 采样日期
+                $worksheet->write('H10',decode('GB2312',DateUnify($date4{$num3[$z]})),$format10);  # "术后患者" 的收样日期 设置为 供患信息中 实验编码 对应的 收样日期
+                $worksheet->write('H11',decode('GB2312',DateUnify($date4{$num2[$z]})),$format10);  # "术前供者" 的收样日期 设置为 供患信息中 实验编码 对应的 收样日期
+                $worksheet->write('B12',decode('GB2312','住院/门诊号'),$format6);  # 写入 "住院/门诊号" 表头
+                $worksheet->write('E12',decode('GB2312','床号'),$format6);  # 写入 "床号" 表头
+                $worksheet->write('G12',decode('GB2312','临床诊断'),$format6);  # 写入 "临床诊断" 表头
+                $worksheet->merge_range('C12:D12', decode('GB2312',$hosptl_num{$num3[$z]}), $format7);  # 患者的 "住院/门诊号" 设置为 供患信息中 "术后患者" 实验编码 对应的 住院号
+                $worksheet->write('F12',decode('GB2312',$bed_num{$num3[$z]}),$format6);  # 患者的 "床号" 设置为 供患信息中 "术后患者" 实验编码 对应的 床号
 
-                if ($diagnosis{$num3[$z]} ne "-"){
-                     $worksheet->merge_range('H12:I12', decode('GB2312',$diagnosis{$num3[$z]}), $format7);
+                # 写入 患者的 临床诊断 信息
+                if ($diagnosis{$num3[$z]} ne "-"){  # "术后患者" 的临床诊断不为 "-"
+                     $worksheet->merge_range('H12:I12', decode('GB2312',$diagnosis{$num3[$z]}), $format7);  # 根据 供患信息中 "诊断" 设置
                 }else{
-                     $worksheet->merge_range('H12:I12', decode('GB2312',$diagnosis{$num1[$z]}), $format7);
+                     $worksheet->merge_range('H12:I12', decode('GB2312',$diagnosis{$num1[$z]}), $format7);  # 根据术前患者的 实验编码 对应 供患信息中 "诊断" 设置
                      }
 
-                my $tmp = $sheet[$z];
-                if ($relation{$num2[$z]} =~ /$tmp/){
-                        $relation{$num2[$z]} =~ s/$tmp//;
+
+                my $tmp = $sheet[$z];  # @sheet: 存放 第几份 报告对应的 "患者姓名"
+                if ($relation{$num2[$z]} =~ /$tmp/){  # %relation 供患信息中 实验编码 对应的 亲缘关系 / $num2[$z]: 第几份报告 对应的 "术前供者" 的实验编码
+                        $relation{$num2[$z]} =~ s/$tmp//;  # 如: 李某父亲， 去掉其中的 "李某"
                 }
-                $worksheet->write('I10',decode('GB2312',$relation{$num3[$z]}),$format6);
-                $worksheet->write('I11',decode('GB2312',$relation{$num2[$z]}),$format6);
-                $worksheet->merge_range('B14:I14', decode('GB2312','检测结果'), $format5);
-                $worksheet->merge_range('B15:B17', decode('GB2312','STR位点'), $format15);
-                $worksheet->merge_range('C15:H15', decode('GB2312','等位基因'), $format5);
-                if ($sample{$num1[$z]} =~ /口腔/){
-                        $worksheet->merge_range('C16:D16', decode('GB2312','患者移植前(口腔)'), $format7);
+                $worksheet->write('I10',decode('GB2312',$relation{$num3[$z]}),$format6);  # 写入 "术后患者" 与 患者的关系
+                $worksheet->write('I11',decode('GB2312',$relation{$num2[$z]}),$format6);  # 写入 "术前供者" 与 患者的关系
+                $worksheet->merge_range('B14:I14', decode('GB2312','检测结果'), $format5);  # 写入 "检测结果" 表头
+                $worksheet->merge_range('B15:B17', decode('GB2312','STR位点'), $format15);  # 写入 "STR位点" 表头
+                $worksheet->merge_range('C15:H15', decode('GB2312','等位基因'), $format5);  # 写入 "等位基因" 表头
+                if ($sample{$num1[$z]} =~ /口腔/){  # "术前患者" 在供患信息中 实验编码 对应的 样本类型
+                        $worksheet->merge_range('C16:D16', decode('GB2312','患者移植前(口腔)'), $format7);  # 写入 "患者移植前(口腔)" 表头
                 }else{
-                        $worksheet->merge_range('C16:D16', decode('GB2312','患者移植前'), $format7);
+                        $worksheet->merge_range('C16:D16', decode('GB2312','患者移植前'), $format7);  # 写入 "患者移植前" 表头
                 }
-                $worksheet->merge_range('E16:F16', decode('GB2312','供    者'), $format7);
-                $worksheet->merge_range('G16:H16', decode('GB2312','患者移植后'), $format7);
-                $worksheet->merge_range('C17:D17', decode('GB2312','样本编号：'.$num1[$z]), $format16);
-                $worksheet->merge_range('E17:F17', decode('GB2312','样本编号：'.$num2[$z]), $format16);
-                $worksheet->merge_range('G17:H17', decode('GB2312','样本编号：'.$num3[$z]), $format16);
-                $worksheet->merge_range('I15:I17', decode('GB2312','位点状态'), $format15);
+                $worksheet->merge_range('E16:F16', decode('GB2312','供    者'), $format7);  # 写如 "供者" 表头
+                $worksheet->merge_range('G16:H16', decode('GB2312','患者移植后'), $format7);  # 写入 "患者移植后" 表头
+                $worksheet->merge_range('C17:D17', decode('GB2312','样本编号：'.$num1[$z]), $format16);  # 写入 "术前患者" 的 实验编码
+                $worksheet->merge_range('E17:F17', decode('GB2312','样本编号：'.$num2[$z]), $format16);  # 写入 "术前供者" 的 实验编码
+                $worksheet->merge_range('G17:H17', decode('GB2312','样本编号：'.$num3[$z]), $format16);  # 写入 "术后患者" 的 实验编码
+                $worksheet->merge_range('I15:I17', decode('GB2312','位点状态'), $format15);  # 写入 "位点状态" 表头
+                # 写入 每个marker的型别
                 for my $q (0..$#markers){
-                        $worksheet->write($q+17,1,$markers[$q], $format6);
-                        $worksheet->merge_range($q+17,2,$q+17,3,decode('GB2312',$allele{$num1[$z]}{$markers[$q]}), $format7);
-                        $worksheet->merge_range($q+17,4,$q+17,5,decode('GB2312',$allele{$num2[$z]}{$markers[$q]}), $format7);
-                        $worksheet->merge_range($q+17,6,$q+17,7,decode('GB2312',$allele{$num3[$z]}{$markers[$q]}), $format7);
-                        $worksheet->write($q+17,8,decode('GB2312',$marker_type[$z][$q]), $format6);
+                        $worksheet->write($q+17,1,$markers[$q], $format6);  # 写入 marker 名
+                        $worksheet->merge_range($q+17,2,$q+17,3,decode('GB2312',$allele{$num1[$z]}{$markers[$q]}), $format7); # 写入 "术前患者" 每个marker 对应的型别
+                        $worksheet->merge_range($q+17,4,$q+17,5,decode('GB2312',$allele{$num2[$z]}{$markers[$q]}), $format7);  # 写入 "术前供者" 每个marker 对应的型别
+                        $worksheet->merge_range($q+17,6,$q+17,7,decode('GB2312',$allele{$num3[$z]}{$markers[$q]}), $format7);  # 写入 "术后患者" 每个marker 对应的型别
+                        $worksheet->write($q+17,8,decode('GB2312',$marker_type[$z][$q]), $format6);  # 写入 第几个报告单编号 的第几个marker 的状态：'混合嵌合' / ' ' (完全嵌合)
                 }
+
+                # 写入 "检测结论" 表头
                 $worksheet->write('B34',decode('GB2312','检测结论：'),$format17);
-                if ($count_avg[$z] =~ /\d/){
+                # 写入 "检测结论"
+                # 判断 样本的嵌合率 是否为 数字
+                if ($count_avg[$z] =~ /\d/){  # 如果为数字，则转换为百分比，保留2位有效数字
                         $count_avg[$z] = sprintf("%.2f", $count_avg[$z]*100);
-                        unless ($conclusion[$z]){
-                                if($count_avg[$z] >= 95){
+                        unless ($conclusion[$z]){  # 报告对应的结论 不为 空
+                                if($count_avg[$z] >= 95){  # 嵌合率 >= 95%  ==> 完全嵌合
                                         $conclusion[$z] = '患者移植后供者细胞占'.$count_avg[$z].'%，表现为完全嵌合状态。';
                                         $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
-                                }elsif($count_avg[$z] < 5){
+                                }elsif($count_avg[$z] < 5){  # 嵌合率 < 5% ==> 微嵌合
                                         $conclusion[$z] = '患者移植后供者细胞占'.$count_avg[$z].'%，表现为微嵌合状态。';
                                         $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
-                                }else{
+                                }else{  # 5% <= 嵌合率 < 95%  ==> 混合嵌合
                                         $conclusion[$z] = '患者移植后供者细胞占'.$count_avg[$z].'%，表现为混合嵌合状态。';
                                         $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
                                 }
@@ -2403,22 +2467,27 @@ sub RUN_Click{
                 }else{
                         $worksheet->merge_range('C34:I34',decode('GB2312','无'), $format18);
                 }
+
+                # 写入 "备注" 表头
                 $worksheet->write('B35',decode('GB2312','备    注'),$format15);
+                # 写入 "备注" 的信息
                 $worksheet->merge_range('C35:I35', decode('GB2312','1、嵌合状态界定[1]
 完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
 [1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow
 transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
 2、本报告用于生物学数据比对、分析，非临床检测报告。'), $format19);
 
+                # 写入 "检测者" "复核者" "检测日期" "报告日期"
                 $worksheet->merge_range('B37:C37', decode('GB2312','检  测  者'), $format7);
                 $worksheet->merge_range('B38:C38', decode('GB2312','复  核  者'), $format7);
                 $worksheet->merge_range('D37:E37', decode('GB2312',''), $format7);
                 $worksheet->merge_range('D38:E38', decode('GB2312',''), $format7);
                 $worksheet->merge_range('F37:G37', decode('GB2312','检测日期'), $format7);
                 $worksheet->merge_range('F38:G38', decode('GB2312','报告日期'), $format7);
-                $worksheet->merge_range('H37:I37', decode('GB2312',DateUnify($date1{$num3[$z]})), $format9);
-                $worksheet->merge_range('H38:I38', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format9);
+                $worksheet->merge_range('H37:I37', decode('GB2312',DateUnify($date1{$num3[$z]})), $format9);  # 将 "术后患者" 实验编码 对应的 "收样日期" 设置为 供患信息中 实验编码 对应的 生产时间  （用生产日期 设置 收样日期 ？）
+                $worksheet->merge_range('H38:I38', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format9);  # 设置 "报告日期" 为报告软件出报告的 当天
 
+                # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
                 if (-e "pic/检测者.png"){
                      $worksheet->insert_image('D37', "pic/检测者.png", 5, 0, 1, 1);
                      }
@@ -2432,6 +2501,8 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
 
 #姓名        医院        样本类型        样本编号        报告编号        嵌合率
 
+                # 如果 样本的嵌合率 == 0
+                # 重写写入 嵌合率汇总 的结果文件 "嵌合率汇总-%4d%02d%02d.txt"
                 if ($count_avg[$z] == 0){
                         printf SUM "%s\t%s\t%s\t%s\t%s\t%f%s\t%d\tNA\tNA\n", $name{$num3[$z]}, $hospital{$num3[$z]}, $sample{$num3[$z]}, $number{$num3[$z]}, $rptnum{$num3[$z]}, $count_avg[$z],"%",$count_n[$z];
                 }
@@ -2441,15 +2512,17 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                 }
 
 #
+                # 如果 报告单编号 对应的 实验编码 不为3 或者 $sheet[$z] 对应的 "患者姓名"  的第二份及以后的报告，不生成嵌合曲线
                 if ($exp_num{$TCAID} != 3 or $sheet_name{$sheet[$z]} > 1){
                         $workbook -> close();
-                        $RptBox -> Append("报告生成成功！无嵌合曲线\r\n");
+                        $RptBox -> Append("报告生成成功！无嵌合曲线\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
                         next;
                 }
-                $RptBox -> Append("报告生成成功！");
+                $RptBox -> Append("报告生成成功！");  # 更新 "生成报告" 部分的文本框中显示的提示信息
 
-        #####################################################################################
-                my $tempid = $identity{$TCAID};
+#########################################  2020.05.24.14.32 ##########################################################
+######################################### 输出 "temp" 表单 ##########################################################
+                my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
                 my $i;
                 my $j = 1;
                 my $Chart_Marker_Num = 0;
@@ -2458,40 +2531,42 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                 my %Types;
                 my @date_seq;
                 push @date_seq, 0;
-                if(exists $Chimerism{$tempid}){
-                        foreach $i(0 .. $#{$Chimerism{$tempid}}){
-                                my $Chmrsm = $Chimerism{$tempid}[$i];
-                                $Chmrsm =~ s/%//;
-                                $Chmrsm = sprintf ("%.2f", $Chmrsm);
-                                my $Smplid = $SampleID{$tempid}[$i];
-                                my $SmpType = $sampleType{$Smplid};
-                                next unless $SmpType;
-                                next if $SmpType eq "-";
-                                my $rptDate = DateUnify($ReportDate{$tempid}[$i]);
-                                my $rcvDate = DateUnify($receiveDate{$Smplid});
-                                my $smplDate = DateUnify($sampleDate{$Smplid});
+                if(exists $Chimerism{$tempid}){  #  判断 患者编码 对应的嵌合结果 在 %Chimerism 里是否存在 # %Chimerism 将该 患者编码 对应的嵌合结果（有效位点嵌合率的平均值）存入$Chimerism{$tempid}
+                        foreach $i(0 .. $#{$Chimerism{$tempid}}){  # 遍历 患者编码 对应的几份报告的嵌合率
+                                my $Chmrsm = $Chimerism{$tempid}[$i];  # "患者编码" 对应的第几份报告的 嵌合率
+                                $Chmrsm =~ s/%//;  # 嵌合率是 百分比格式
+                                $Chmrsm = sprintf ("%.2f", $Chmrsm);  # 将 百分比格式 转换为 小数（保留小数点后2位）
+                                my $Smplid = $SampleID{$tempid}[$i];   # 实验编码 # 数组里每一个元素都是 hash表，用于存储每个 患者编码 对应的每次检测的 实验编码
+                                my $SmpType = $sampleType{$Smplid};  # 供患信息中 实验编码 对应的 样本类型
+                                next unless $SmpType;  # 如果样本类型为空，则跳到下一份报告单
+                                next if $SmpType eq "-";  # 如果样本类型为 "-"，则跳到下一份报告单
+                                my $rptDate = DateUnify($ReportDate{$tempid}[$i]·);  # 获取 患者编码 对应的 第i份 报告的 报告日期
+                                my $rcvDate = DateUnify($receiveDate{$Smplid});  # 获取 患者编码 对应的 第i份 报告的 收样日期
+                                my $smplDate = DateUnify($sampleDate{$Smplid});  # 获取 患者编码 对应的 第i份 报告的 采样日期
                                 my $tmpDate;
-                                if ($smplDate ne '不详' && $smplDate ne '-'){
+                                if ($smplDate ne '不详' && $smplDate ne '-'){  # 采样日期 不为 "不详" 或 "-"
                                         $tmpDate = $smplDate;
-                                }elsif ($rcvDate ne '不详' && $rcvDate ne '-'){
+                                }elsif ($rcvDate ne '不详' && $rcvDate ne '-'){  # 收样日期 不为 "不详" 或 "-"
                                         $tmpDate = $rcvDate;
-                                }elsif($rptDate ne '不详'){
+                                }elsif($rptDate ne '不详'){  # 报告日期 不为 "不详"
                                         $tmpDate = $rptDate;
-                                }else{
+                                }else{  # 采样日期 / 收样日期 / 报告日期 都是 "不详" 或者 "-"
                                         $tmpDate = sprintf "%s%d%s", "术后", $j, "次";
                                 }
 
                                 # print $Smplid,"|", $rptDate,"|",$rcvDate,"|",$smplDate,"|",$tmpDate,"\n";
 
-                                $Graphic_Chimerism{$tmpDate}{$SmpType} = $Chmrsm;
-                                $Graphic_SampleID{$tmpDate}{$SmpType} = $Smplid;
-                                $Types{$SmpType} ++;
-                                if ($date_seq[-1] ne $tmpDate || $tmpDate =~ /术后/){
+                                $Graphic_Chimerism{$tmpDate}{$SmpType} = $Chmrsm;  # 存储 样本 某个时间（采样日期 / 收样日期 / 报告日期）对应的 某个类型的样本 对应的 嵌合率结果
+                                $Graphic_SampleID{$tmpDate}{$SmpType} = $Smplid;  # 存储 样本 某个时间（采样日期 / 收养日期 / 报告日期）对应的 某个类型的样本 对应的 实验编码
+                                $Types{$SmpType} ++;  # 样本类型 个数递增
+                                if ($date_seq[-1] ne $tmpDate || $tmpDate =~ /术后/){  # 将样本的 （采样日期 / 收样日期 / 报告日期）存入 @date_seq
                                         push @date_seq, $tmpDate;
                                         $j ++;
                                 }
-                                $Chart_Marker_Num ++;
+                                $Chart_Marker_Num ++;  # 记录总的报告数？
                         }
+
+############################ 写入 temp 表单 #######################################
                         shift @date_seq;
                         my $headings;
                         push @{$headings}, decode('GB2312', '时间');
@@ -2512,13 +2587,18 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                                 $i ++;
                         }
 
-                        $graphic_temp -> write('A1', $headings);
-                        $graphic_temp -> write('A2', $write_data);
-                        $graphic->hide_gridlines();
-                        $graphic->keep_leading_zeros();
+                        $graphic_temp -> write('A1', $headings);  # 写 表头 列
+                        $graphic_temp -> write('A2', $write_data);  # 写入 每次检测的嵌合率结果
+
+
+############################ 输出 "嵌合曲线" 表单 #######################################
+                        $graphic->hide_gridlines();  # 隐藏 网格线
+                        $graphic->keep_leading_zeros();  # 保留 开头的0
+                        # 设置各列的宽度
                         $graphic->set_column(0,0,4.24);
                         $graphic->set_column(1,6,13.75);
                         $graphic->set_column(7,7,4.24);
+                        # 设置各行的高度
                         my @rows = (75,   3.6, 3.6 , 3.6 , 19 ,  18 ,  15.6, 15.6,
                                                 15.6, 18.6,        25.8, 18.6, 19.2, 24.6, 19.8, 16.2,
                                                 16.2, 16.2, 16.2, 16.2,        16.2, 16.2, 16.2, 24, #24 from 32 to 24
@@ -2526,72 +2606,92 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                         for my $i(0 .. $#rows){
                                 $graphic->set_row($i, $rows[$i]);
                         }
+
+                        # 设置 "嵌合曲线" 表单 下面 每次检测结果表格的行高
                         foreach $i(1 .. $Chart_Marker_Num){
                                 $graphic->set_row($i+30, 13.5);
                         }
+
+                        # 设置 左右和上 边距
                         $graphic->set_margin_left(0.394);
                         $graphic->set_margin_right(0.394);
                         #$graphic->set_margin_top(0.2);
-                        $graphic->set_footer($footer);
+
+                        # 设置 页脚
+                        $graphic->set_footer($footer);  # $footer: L2418 - L2421
+
+                        # B1 插入 logo
                         $graphic->insert_image('B1', "pic/荻硕贝肯logo.png", 10, 10, 0.73, 0.73);
 
+                        # 写入 "嵌合曲线" 表头
                         $graphic->merge_range('B1:G1', decode('GB2312','嵌合曲线'), $format1);
                         #$graphic->merge_range('B2:G2', decode('GB2312','地址：上海市浦东新区紫萍路908弄21号（上海国际医学园区）          邮编：201318'), $format2);
+                        # 插入一个空行
                         $graphic->merge_range('B4:G4', decode('GB2312',''), $format2);
+
+                        # 写入 "患者姓名" 表头
                         $graphic->write('B5',decode('GB2312','患者姓名'), $Gfmt1);
+                        # 写入 "患者姓名" 内容 $name[$num3[$z]]
                         $graphic->write('C5',decode('GB2312',$name{$num3[$z]}), $Gfmt2);
+                        # 写入 "样本编号" 表头 及 内容 （实际为 供患信息中的 "实验编码"）
                         $graphic->write('F5',decode('GB2312','样本编号：'), $Gfmt1);
                         $graphic->write('G5',decode('GB2312',$number{$num3[$z]}), $Gfmt1);
+
+                        # 插入嵌合曲线图
                         my $chart = $workbook->add_chart(type => 'line', embedded => 1 );
-
-                        my $row_max = $#{${$write_data}[0]}+1;
-                        my $col_max = $#{$write_data};
-
-
-                        for my $i(1..$col_max){
-                                my $formula = sprintf "=temp!\$%s1", chr($i+65);
-                                $chart->add_series(
-                                        categories => ['temp', 1,$row_max, 0 , 0],
-                                        values     => ['temp', 1, $row_max, $i, $i],
+                        my $row_max = $#{${$write_data}[0]}+1; # 获取 "temp" 表单的总行数， +1 是因为 add_series 里是以1为起始的
+                        my $col_max = $#{$write_data};  # 获取 "temp" 表单的总列数
+                        for my $i(1..$col_max){  # 遍历加入  每个 样本类型
+                                my $formula = sprintf "=temp!\$%s1", chr($i+65);  # 格式后续测试时关注
+                                $chart->add_series(  # 根据 "temp" 表单，选取画图的数据区域
+                                        categories => ['temp', 1,$row_max, 0 , 0],  # 选取 "temp" 的第一列作为 categories
+                                        values     => ['temp', 1, $row_max, $i, $i],  # 选择 "temp" 的第i+1列 作为 values (对应每一种样本类型)
                                         name_formula => $formula,
                                         # name       => decode('GB2312',${$headings}[$i]),
-                                                marker   => {
+                                                marker   => {  # 设置每个 series (样本类型) 的符号
                                                         type    => 'automatic',
                                                         size    => 5,
                                                 },
                                 );
                         }
 
-                        $chart->set_chartarea(
+                        #
+                        $chart->set_chartarea(  # is used to set the properties of the chart area
                                 color => 'white',
                                 line_color => 'black',
                                 line_weight => 3,
                         );
 
-                        $chart->set_plotarea(
+                        $chart->set_plotarea(  # is used to set properties of the plot area of a chart.
                                 color => 'white',
 
                         );
 
-                        $chart->set_y_axis(
+                        $chart->set_y_axis(  # is used to set properties of the Y axis.
                                 name => decode('GB2312','嵌合率(%)'),
                                 min  => 0,
                                 max  => 100,
                                 major_unit => 20,
                         );
 
-
+                        # 设置 图例的位置(bottom) / 整个图表的宽高(in pixels)
                         $chart->set_legend( position => 'bottom' );
                         $chart->set_size( width => 607, height => 400 );
+                        # 将图表插入 "嵌合曲线" 的 "B7"
                         $graphic->insert_chart('B7', $chart);
 
+                        # "嵌合曲线" 图表下面 提示信息 部分的内容
+                        # 写入 "TCA定期检测流程 .... 等说明性 内容"
                         $graphic->merge_range('B25:G25', decode('GB2312','TCA定期检测流程'), $Gfmt5);
                         $graphic->merge_range('B26:G26', decode('GB2312','基线检测：术前同时对供、受者进行检测、也可以在术后首次追踪检测时进行'), $Gfmt6);
                         $graphic->merge_range('B27:G27', decode('GB2312','追踪检测：建议在术后2周进行第一次TCA，第4周进行第二次检测；'),$Gfmt6);
                         $graphic->merge_range('B28:G28', decode('GB2312','        术后6个月内，每月检测一次；6个月之后，每2个月检测一次，直至嵌合率稳定'), $Gfmt6);
+                        # 插入建议的检测时间轴 "pic/comment.bmp"
                         $graphic->insert_image('B29', "pic/comment.bmp", 5, 5);
                         $graphic->merge_range('B30:G30', decode('GB2312','温馨提示：一旦术后免疫治疗方案调整，在调整后2周需要重新启动检测'), $Gfmt7);
 
+                        # 写入 "嵌合曲线" 最下部分 "每次检测的 采样日期/检测日期/嵌合率(%)/样本编号(实际为实验编码)/样本类型" 汇总表
+                        # 写入表头
                         $graphic->write('B32', decode('GB2312','检测次数'), $Gfmt3);
                         $graphic->write('C32', decode('GB2312','采样日期'), $Gfmt3);
                         $graphic->write('D32', decode('GB2312','检测日期'), $Gfmt3);
@@ -2601,21 +2701,22 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
 
                         my $i = 1;
                         my $j = 1;
-                        for my $tmpDate(@date_seq){
-                                for my $SmpType(keys %Types){
-                                        my $Smplid = $Graphic_SampleID{$tmpDate}{$SmpType};
-                                        my $Chmrsm = $Graphic_Chimerism{$tmpDate}{$SmpType};
-                                        next unless $Smplid;
-                                        my $rcvDate = $receiveDate{$Smplid};
-                                        my $smplDate = $sampleDate{$Smplid};
-                                        $graphic->write($j+31, 1, $i, $Gfmt4);
-                                        $graphic->write($j+31, 2, decode('GB2312',$smplDate), $Gfmt4);
-                                        $graphic->write($j+31, 3, decode('GB2312',$rcvDate), $Gfmt4);
-                                        $graphic->write($j+31, 4, sprintf("%.2f",$Chmrsm), $Gfmt8);
-                                        $graphic->write($j+31, 5, $Smplid, $Gfmt4);
-                                        $graphic->write($j+31, 6, decode('GB2312',$SmpType), $Gfmt9);
+                        for my $tmpDate(@date_seq){  # 遍历每个采样日期
+                                for my $SmpType(keys %Types){  # 遍历每个采样日期的每种 样本类型
+                                        my $Smplid = $Graphic_SampleID{$tmpDate}{$SmpType};  # 某个采样日期的某个样本类型 对应的 "实验编码"
+                                        my $Chmrsm = $Graphic_Chimerism{$tmpDate}{$SmpType};  # 某个采样日期的某个样本类型 对应的 "嵌合率"
+                                        next unless $Smplid;  # 跳过 "实验编码" 为空的行
+                                        my $rcvDate = $receiveDate{$Smplid};  # 获取 "实验编码" 对应的 "收样日期"
+                                        my $smplDate = $sampleDate{$Smplid};  # 获取 "实验编码" 对应的 "采样日期"
+
+                                        $graphic->write($j+31, 1, $i, $Gfmt4);  # 写入 检测次数
+                                        $graphic->write($j+31, 2, decode('GB2312',$smplDate), $Gfmt4);  # 写入 "采样日期"
+                                        $graphic->write($j+31, 3, decode('GB2312',$rcvDate), $Gfmt4);  # 写入 "收样日期" （对应表格中的 "检测日期"）
+                                        $graphic->write($j+31, 4, sprintf("%.2f",$Chmrsm), $Gfmt8);  # 写入 "嵌合率" 结果，按百分比个数，保留小数点后2位有效数字
+                                        $graphic->write($j+31, 5, $Smplid, $Gfmt4);  # 写入 "实验编码" （对应表格中的 "样本编号"）
+                                        $graphic->write($j+31, 6, decode('GB2312',$SmpType), $Gfmt9);  # 写入 "样本类型"
                                         $j ++;
-                                        if (($j-11)%54 == 0){
+                                        if (($j-11)%54 == 0){  # 当检测次数超过5次时，重新写一次表头
                                                 $graphic->write($j+31, 1, decode('GB2312','检测次数'), $Gfmt3);
                                                 $graphic->write($j+31, 2, decode('GB2312','采样日期'), $Gfmt3);
                                                 $graphic->write($j+31, 3, decode('GB2312','检测日期'), $Gfmt3);
@@ -2632,12 +2733,13 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
 
                 }
 
+                # excel 文件写完，关闭文件
                 $workbook->close();
-                $RptBox -> Append("嵌合曲线生成成功！\r\n");
+                $RptBox -> Append("嵌合曲线生成成功！\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
 
         }
 
-
+        # 输出 状态 提示信息 ($sb))
         $sb->Move( 0, ($main->ScaleHeight() - $sb->Height()) );
         $sb->Resize( $main->ScaleWidth(), $sb->Height() );
         if ($success){
@@ -2659,36 +2761,60 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
 
 }
 
+###################################################################################
+# RUN_MouseMove 函数: "生成报告" 按钮 鼠标移上 时的处理函数                            #
+###################################################################################
 sub RUN_MouseMove{
         $sb -> Text('运行，产生分析报告');
 }
 
+###################################################################################
+# RUN_MouseOut 函数: "生成报告" 按钮 鼠标移出 时的处理函数                            #
+###################################################################################
 sub RUN_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# QUIT_MouseMove 函数: "退出" 按钮 鼠标移上 时的处理函数                              #
+###################################################################################
 sub QUIT_MouseMove{
         $sb -> Text('退出');
 }
 
+###################################################################################
+# QUIT_MouseMove 函数: "退出" 按钮 鼠标移出 时的处理函数                              #
+###################################################################################
 sub QUIT_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# QUIT_MouseMove 函数: "退出" 按钮 点击 时的处理函数                                 #
+###################################################################################
 sub QUIT_Click{
         &WriteConfig;
 
         return -1;
 }
 
+###################################################################################
+# COPY_MouseMove 函数: "复制" 按钮 鼠标移上 时的处理函数                              #
+###################################################################################
 sub COPY_MouseMove{
         $sb -> Text('复制右侧框中所有记录至剪贴板');
 }
 
+###################################################################################
+# COPY_MouseOut 函数: "复制" 按钮 鼠标移出 时的处理函数                               #
+###################################################################################
 sub COPY_MouseOut{
         $sb -> Text('');
 }
 
+###################################################################################
+# COPY_MouseOut 函数: "复制" 按钮 点击 时的处理函数                                   #
+###################################################################################
 sub COPY_Click{
         $RptBox -> SelectAll();
         $RptBox -> Copy();
@@ -2696,10 +2822,13 @@ sub COPY_Click{
         Win32::MsgBox $error, 0 ,"成功！";
 }
 
+###################################################################################
+# Shorten 函数: 截断显示文件名的函数，在 供患信息列表框 和 已有数据列表框中调用           #
+###################################################################################
 sub Shorten{
-        my ($string, $lim) = @_;
+        my ($string, $lim) = @_; print "L2700:" . $string . "\t" . $lim ."\n";
         if ($string =~ /$pwd\\(.+)$/){
-                $string = ".\\".$1;
+                $string = ".\\".$1; print "L2702:" . $string . "\n";
         }
         my $len = length($string);
         return $string if $len <= $lim;
@@ -2709,6 +2838,9 @@ sub Shorten{
         return $tmp;
 }
 
+###################################################################################
+# DelItem 函数: 从数组中删除指定下标的元素，在 XXX 中调用                              #
+###################################################################################
 sub DelItem{
         my $index = pop;
         my @array = @_;
@@ -2727,6 +2859,9 @@ sub DelItem{
         return @tmp;
 }
 
+###################################################################################
+# ReadConfig 函数: 读取配置文件                                                     #
+###################################################################################
 sub ReadConfig{
         unless (open IN,"TCAconfig.ini"){
                 open IN,"> TCAconfig.ini";
@@ -2746,6 +2881,9 @@ sub ReadConfig{
         close IN;
 }
 
+###################################################################################
+# WriteConfig 函数: 写入配置文件                                                    #
+###################################################################################
 sub WriteConfig{
         `attrib -r -h TCAconfig.ini` if (-e "TCAconfig.ini");
         open IN,"> TCAconfig.ini";
@@ -2756,6 +2894,9 @@ sub WriteConfig{
         `attrib +r +h TCAconfig.ini`;
 }
 
+###################################################################################
+# DateUnify 函数: 日期格式化                                                        #
+###################################################################################
 sub DateUnify{
         return $_[0] if $_[0] eq '不详';
 
@@ -2770,6 +2911,9 @@ sub DateUnify{
         }
 }
 
+###################################################################################
+# Avg_SD 函数: 输入数组，计算数组的均值 和 SD                                         #
+###################################################################################
 sub Avg_SD{
         my $total = 0;
         my $SD = 0;
