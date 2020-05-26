@@ -84,6 +84,7 @@ my %trans; # 用来保存 下机数据 中该 实验编码 缩写 到 全称 的转换
 
 # 定义STR检测的位点编号
 my @markers = ('D8S1179','D21S11','D7S820','CSF1PO','D3S1358','D5S818','D13S317','D16S539','D2S1338','D19S433','VWA','D12S391','D18S51','Amel','D6S1043','FGA');
+my @markers_jrk = ('D3S1358','vWA','D16S539','CSF1PO','TPOX','Yindel','AMEL','D8S1179','D21S11','D18S51','Penta E','D2S441','D19S433','TH01','FGA','D22S1045','D5S818','D13S317','D7S820','D6S1043','D10S1248','D1S1656','D12S391','D2S1338','Penta D');
 my %markerExist;  # 使用hash表 存放 marker名， 以方便方便检查 marker是否存在
 foreach (@markers){
         $markerExist{$_} = 'yes',
@@ -400,7 +401,7 @@ unless (-e ".PrevChimerism.txt"){
 open IN,".PrevChimerism.txt";
 <IN>;
 
-# .PrevChimerism.txt 的格式如下 ##############################################################################################################################################################################################################
+# .PrevChimerism.txt (术后结果汇总) 的格式如下 ##############################################################################################################################################################################################################
 # 0报告编号        1患者姓名        2实验编码        3相关供者/报告        4嵌合率        5报告日期        6医院编号        7医院全称        8备注        9样本类型        10样品性质
 # 示例如下：
 # 报告编号	患者姓名	实验编码	相关供者/报告	嵌合率	报告日期	医院编号	医院全称	备注	样本类型	样品性质		检测次数
@@ -522,7 +523,7 @@ foreach (@filelist){
 $Input1 -> Add(@InputList);  # 将@InputList中存储的截断文件名显示到 "供患信息" 部分的列表框中
 ################# 读取 InputLoc 目录下的 供患信息文件 完成 ###############
 
-################# 读取 SummaryLoc 目录下的 已有型别汇总文件 （只读取保存文件名） ###############
+################# 读取 SummaryLoc 目录下的 已有数据 (已有型别汇总文件) （只读取保存文件名） ###############
 # 已有数据文件（型别汇总） 的格式如下 ##############################################################################################################################################################################################################
 # 0	1Marker1	2Marker2	3Marker3	4Marker4	5Marker5	6Marker6	7Marker7	8Marker8	9Marker9	10Marker10	11Marker11	12Marker12	13Marker13	14Marker14	15Marker15	16Marker16 ... 25Marker25
 # 示例如下：
@@ -884,21 +885,21 @@ sub Open1_Click{
 }
 
 ###################################################################################
-# Open1_MouseMove 函数: "供患信息" 部分列表框下方的 "其他位置" 按钮鼠标移上时的处理函数        #
+# Open1_MouseMove 函数: "供患信息" 部分列表框下方的 "其他位置" 按钮鼠标移上时的处理函数    #
 ###################################################################################
 sub Open1_MouseMove{
         $sb -> Text('从其他位置读取');
 }
 
 ###################################################################################
-# Open1_MouseOut 函数: "供患信息" 部分列表框下方的 "其他位置" 按钮鼠标移出时的处理函数       #
+# Open1_MouseOut 函数: "供患信息" 部分列表框下方的 "其他位置" 按钮鼠标移出时的处理函数     #
 ###################################################################################
 sub Open1_MouseOut{
         $sb -> Text('');
 }
 
 ###################################################################################
-# List2_DblClick 函数: "已有数据" 部分的列表框中双击时的处理函数                          #
+# List2_DblClick 函数: "已有数据" 部分的列表框中双击时的处理函数                        #
 ###################################################################################
 ################# 读取 SummaryLoc 目录下的 已有型别汇总文件 （只读取保存文件名） ###############
 # 已有数据文件（型别汇总） 的格式如下 ##############################################################################################################################################################################################################
@@ -1063,7 +1064,7 @@ sub Open2_MouseMove{
 }
 
 ###################################################################################
-# Open2_MouseMove 函数: "已有数据" 部分列表框下方的 "其他位置" 按钮鼠标移出时的处理函数  #
+# Open2_MouseMove 函数: "已有数据" 部分列表框下方的 "其他位置" 按钮鼠标移出时的处理函数   #
 ###################################################################################
 
 sub Open2_MouseOut{
@@ -1071,7 +1072,7 @@ sub Open2_MouseOut{
 }
 
 ###################################################################################
-# DISPLAY2_Click 函数: "打印已有分型" 按钮 点击时的处理函数                             #
+# DISPLAY2_Click 函数: "打印已有分型" 按钮 点击时的处理函数                            #
 ###################################################################################
 ### "打印已有分型" 指的是，打印已有 "术前患者" 和 "术前供者" 的型别 #######################
 sub DISPLAY2_Click{
@@ -1170,7 +1171,7 @@ A:
         }
 
         $workbook -> close();  # 已有分型 写入 excel文件 "分型列表-%4d%02d%02d.xlsx" 完成
-        `start $Temp_typinglist`;  # 调用windows cmd, 启动单独的“命令提示符”窗口来运行指定程序或命令。
+        `start $Temp_typinglist`;  # 调用windows cmd, 启动单独的“命令提示符”窗口来运行指定程序或命令。 实际效果：打开 "分型列表-%4d%02d%02d.xlsx"
 
         return 0;
 }
@@ -1596,7 +1597,20 @@ sub RUN_Click{
         $sb->Resize( $main->ScaleWidth(), $sb->Height() );
         $sb->Text("正在合并处理文件...");
         $RUNwindow -> Show();
-
+        #################### 定义一组变量用于存储 汇总报告单中需要的信息 ########################################################################################
+        my %this_patient_ID_and_report_id = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者本轮检测的汇总报告单的编号
+        my %this_patient_ID_and_patient_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者姓名
+        my %this_patient_ID_and_patient_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者年龄
+        my %this_patient_ID_and_patient_diagnosis = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者 诊断信息
+        my %this_patient_ID_and_patient_sampleType = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者样本类型 (外周血 / 骨髓 /骨髓血?)
+        my %this_patient_ID_and_patient_sampleDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者采样日期
+        my %this_patient_ID_and_patient_rcvDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者收样(接样)日期
+        my %this_patiend_ID_and_donor_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者姓名
+        my %this_patiend_ID_and_donor_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者性别
+        my %this_patiend_ID_and_donor_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者年龄
+        my %this_patiend_ID_and_dono_relationship = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者与他/她的关系
+        my %this_patiend_ID_and_hospital = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 医院全称
+        my %this_patiend_ID_and_doctor = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 送样医生
         %allele = ();
 
         foreach my $PrevKey1(keys %PrevAllele){  # %PrevAllele 保存已有数据中 每个 实验编码 的每个marker 对应的 型别信息
@@ -1618,18 +1632,18 @@ sub RUN_Click{
         my %sheet_name;
 
         foreach (keys %exp_id){  # %exp_id，存放每个实验编码的原始顺序
-# 供患关系文件 的格式如下 ##############################################################################################################################################################################################################
-# 0收样日期	1生产时间	2移植日期	3样品类型	4样品性质	5分选类别	6采样日期	7实验编码	8报告单编号	9姓名	10供患关系	11性别	12年龄	13诊断	14亲缘关系	15关联样本编号	16医院编码	17送检医院	18送检医生  19住院号   20床号
-# 示例如下：
-# 收样日期	生产时间	移植日期	样品类型	样品性质	分选类别	采样日期	实验编码	报告单编号	姓名	供患关系	性别	年龄	诊断	亲缘关系	关联样本编号	医院编码	送检医院	送检医生  住院号   床号
-# 				术前			D19STR00039	QC-Q019	Q17	患者
-# 				术前			10751	QC-Q019		供者
-# 				术后			Q19	QC-Q019	Q19	患者							南京市儿童医院
-# 	2020/3/5		[其他]	术前		2020/3/3	D20STR01231	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人
-# 	2020/3/5		[其他]	术前		2020/3/3	D20STR01232	TCA2007498	吴文方	供者	男	44	-	弟弟
-# 2020/3/4	2020/3/5		骨髓血	术后		2020/3/3	D20STR01230	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人		广东省人民医院	黄励思
-# 	2018/6/8		全血	术前			STR1808282	TCA2007647	杨梅月	患者	女	不详		杨梅月	本人
-# 	2018/6/8		全血	术前			STR1810793	TCA2007647	杨梅	供者	女	不详		姐姐
+                # 供患关系文件 的格式如下 ##############################################################################################################################################################################################################
+                # 0收样日期	1生产时间	2移植日期	3样品类型	4样品性质	5分选类别	6采样日期	7实验编码	8报告单编号	9姓名	10供患关系	11性别	12年龄	13诊断	14亲缘关系	15关联样本编号	16医院编码	17送检医院	18送检医生  19住院号   20床号
+                # 示例如下：
+                # 收样日期	生产时间	移植日期	样品类型	样品性质	分选类别	采样日期	实验编码	报告单编号	姓名	供患关系	性别	年龄	诊断	亲缘关系	关联样本编号	医院编码	送检医院	送检医生  住院号   床号
+                # 				术前			D19STR00039	QC-Q019	Q17	患者
+                # 				术前			10751	QC-Q019		供者
+                # 				术后			Q19	QC-Q019	Q19	患者							南京市儿童医院
+                # 	2020/3/5		[其他]	术前		2020/3/3	D20STR01231	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人
+                # 	2020/3/5		[其他]	术前		2020/3/3	D20STR01232	TCA2007498	吴文方	供者	男	44	-	弟弟
+                # 2020/3/4	2020/3/5		骨髓血	术后		2020/3/3	D20STR01230	TCA2007498	吴久芳	患者	男	47	-	吴久芳	本人		广东省人民医院	黄励思
+                # 	2018/6/8		全血	术前			STR1808282	TCA2007647	杨梅月	患者	女	不详		杨梅月	本人
+                # 	2018/6/8		全血	术前			STR1810793	TCA2007647	杨梅	供者	女	不详		姐姐
 
                 # 获取当前 实验编码 在供患信息.txt 里的原始顺序
                 my $number = $exp_id{$_};  # $_ : 实验编码;
@@ -1907,23 +1921,6 @@ sub RUN_Click{
                                 }
                         }
 
-                        # foreach (@allele3){
-                                # if (!exists $alleles_before{$_}){
-                                        # $success = 0;
-                                        # $error = '报告单号'.$TCAID.'对应的术前术后分型错误！请检查！
-# '.$markers[$k].':
-# 术前患者：'.$num1[$z].'|'.$allele{$num1[$z]}{$markers[$k]}.'
-# 供者：'.$num2[$z].'|'.$allele{$num2[$z]}{$markers[$k]}.'
-# 术后患者：'.$num3[$z].'|'.$allele{$num3[$z]}{$markers[$k]}.'
-# 将跳过出具此份报告。';
-                                        # Win32::MsgBox $error, 0, "注意";
-                                        # $RptBox -> Append("失败【分型数据错误】：\r\n");
-                                        # $RptBox -> Append($markers[$k].":\r\n术前患者：".$num1[$z]."|".$allele{$num1[$z]}{$markers[$k]}."\r\n    供者：".$num2[$z]."|".$allele{$num2[$z]}{$markers[$k]}."\r\n术后患者：".$num3[$z]."|".$allele{$num3[$z]}{$markers[$k]}."\r\n");
-                                        # $conclusion[$z] = '跳过';
-                                        # last;
-                                # }
-                        # }
-
                         my @area3   = split/、/, $area{$num3[$z]}{$markers[$k]};
                         # print $_,"|" foreach @allele1;
                         # print $_,"|" foreach @allele2;
@@ -2107,8 +2104,7 @@ sub RUN_Click{
                         }
                 }
 
-################################################  2020.05.22.16.18 ################################################
-
+                ################################################  2020.05.22.16.18 ################################################
                 my @temp_marker = ();  # 记录每个marker 是 '混合嵌合' 还是 ' '（完全嵌合）
                 my @tempcount = ();  # 记录每份报告 有嵌合率结果位点 的嵌合率
                 foreach my $k (0..$#markers){
@@ -2164,19 +2160,18 @@ sub RUN_Click{
                 $receiveDate{$num3[$z]} = DateUnify($date1{$num3[$z]});  # 将 "术后患者" 实验编码 对应的 "收样日期" 设置为 供患信息中 实验编码 对应的 生产时间  （用生产日期 设置 收样日期 ？）
                 $sampleDate{$num3[$z]} = DateUnify($date3{$num3[$z]});  # 将 "术后患者" 实验编码 对应的 "采样日期" 设置为 供患信息中 实验编码 对应的 采样日期
                 ##坐等追加到总表中
-                # print $tempid,"\n";
-                # print "Chimerism ";print $_,"|" foreach (@{$Chimerism{$tempid}});print "\n";
-                # print "SampleID ";print $_,"|" foreach (@{$SampleID{$tempid}});print "\n";
-                # print "ReportDate ";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
-                # print "receiveDate ";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
-                # print "ReportDate ";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
-
+                print "L2167:\$tempid:". $tempid,"\n";
+                print "L2168:"."Chimerism:";print $_,"|" foreach (@{$Chimerism{$tempid}});print "\n";
+                print "L2169:"."SampleID:";print $_,"|" foreach (@{$SampleID{$tempid}});print "\n";
+                print "L2170:"."ReportDate:";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
+                print "L2171:"."receiveDate:";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
+                print "L2172:"."ReportDate:";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
         }
-        my $chimerismSummary = sprintf "嵌合率汇总-%4d%02d%02d.txt",$year, $mon, $mday;  # 重写写一个 嵌合率汇总 的结果文件
+        my $chimerismSummary = sprintf "嵌合率汇总-%4d%02d%02d.txt",$year, $mon, $mday;  # 重新 写一个 嵌合率汇总 的结果文件
         open SUM,"> $chimerismSummary";
         print SUM "姓名\t医院\t样本类型\t样本编号\t报告编号\t嵌合率\t有效位点\tSD\tCV\n";
 
-################################################  2020.05.22.17.04 ################################################
+        ################################################  2020.05.22.17.04 ################################################
         $RptBox -> Append("输出准备完成！开始输出报告\r\n========================\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
         # 遍历输出每一份报告
         foreach my $z(0..$#TCA_id){
@@ -2197,7 +2192,7 @@ sub RUN_Click{
                         $sheet_name{$sheet[$z]} = 1;
                 }
 
-################################################  2020.05.22.17.28 ################################################
+                ################################################  2020.05.22.17.28 ################################################
                 my $workbook;
                 # 打开 报告输出文件，准备写报告
                 unless ($workbook = Excel::Writer::XLSX->new($Output_rpt_str)){
@@ -2253,10 +2248,9 @@ sub RUN_Click{
                         $graphic_temp = $workbook->add_worksheet('temp');
                 }
 
+                ######################################## 输出 "计算" 表单 ########################################
                 $countsheet->hide_gridlines();  # "计算" 表单中，隐藏网格线
                 $countsheet->keep_leading_zeros();  # "计算"表单中，保留数字开头的0
-
- ===================== 输出 "计算" 表单 ==================================================
                 # 定义 "计算" 表单里的单元格格式
                 my $format101 = $workbook->add_format(size  => 11, font  => decode('GB2312','宋体'));
                 my $format102 = $workbook->add_format(size  => 11, align => 'center', font  => decode('GB2312','宋体'));
@@ -2281,7 +2275,7 @@ sub RUN_Click{
                 $countsheet->write('S2', 'ERROR',  $format101);
                 $countsheet->write('T1',decode('GB2312','总嵌合率'), $format101);
 
-################################################  2020.05.24.14.32 ################################################
+                ################################################  2020.05.24.14.32 ################################################
                 # 从第一列的三行开始，将 marker名 写入第一列
                 for my $j (0..$#markers){
                         $countsheet->write($j+2,0,$markers[$j], $format101);
@@ -2326,7 +2320,7 @@ sub RUN_Click{
                         }
                 }
 
-########################################### 输出 "报告" 表单 ##########################################################
+                ########################################### 输出 "报告" 表单 ##########################################################
                 # 定义 "报告" 表单的各种格式
                 $worksheet->hide_gridlines();
                 $worksheet->keep_leading_zeros();
@@ -2412,8 +2406,7 @@ sub RUN_Click{
                      $worksheet->merge_range('H12:I12', decode('GB2312',$diagnosis{$num3[$z]}), $format7);  # 根据 供患信息中 "诊断" 设置
                 }else{
                      $worksheet->merge_range('H12:I12', decode('GB2312',$diagnosis{$num1[$z]}), $format7);  # 根据术前患者的 实验编码 对应 供患信息中 "诊断" 设置
-                     }
-
+                }
 
                 my $tmp = $sheet[$z];  # @sheet: 存放 第几份 报告对应的 "患者姓名"
                 if ($relation{$num2[$z]} =~ /$tmp/){  # %relation 供患信息中 实验编码 对应的 亲缘关系 / $num2[$z]: 第几份报告 对应的 "术前供者" 的实验编码
@@ -2472,10 +2465,10 @@ sub RUN_Click{
                 $worksheet->write('B35',decode('GB2312','备    注'),$format15);
                 # 写入 "备注" 的信息
                 $worksheet->merge_range('C35:I35', decode('GB2312','1、嵌合状态界定[1]
-完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
-[1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow
-transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
-2、本报告用于生物学数据比对、分析，非临床检测报告。'), $format19);
+                    完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
+                    [1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow
+                    transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
+                    2、本报告用于生物学数据比对、分析，非临床检测报告。'), $format19);
 
                 # 写入 "检测者" "复核者" "检测日期" "报告日期"
                 $worksheet->merge_range('B37:C37', decode('GB2312','检  测  者'), $format7);
@@ -2490,28 +2483,24 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                 # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
                 if (-e "pic/检测者.png"){
                      $worksheet->insert_image('D37', "pic/检测者.png", 5, 0, 1, 1);
-                     }
+                }
                 if (-e "pic/复核者.png"){
                      $worksheet->insert_image('D38', "pic/复核者.png", 20, 0, 1, 1);
-                     }
+                }
                 if (-e "pic/盖章.png"){
                      $worksheet->insert_image('H37', "pic/盖章.png", 10, 12, 1, 1);
-                     }
+                }
 
-
-#姓名        医院        样本类型        样本编号        报告编号        嵌合率
-
+                #姓名        医院        样本类型        样本编号        报告编号        嵌合率
                 # 如果 样本的嵌合率 == 0
                 # 重写写入 嵌合率汇总 的结果文件 "嵌合率汇总-%4d%02d%02d.txt"
                 if ($count_avg[$z] == 0){
                         printf SUM "%s\t%s\t%s\t%s\t%s\t%f%s\t%d\tNA\tNA\n", $name{$num3[$z]}, $hospital{$num3[$z]}, $sample{$num3[$z]}, $number{$num3[$z]}, $rptnum{$num3[$z]}, $count_avg[$z],"%",$count_n[$z];
                 }
                 else{
-#姓名\t医院\t样本类型\t样本编号\t报告编号\t嵌合率\t有效位点\tSD\tCV
+                        #姓名\t医院\t样本类型\t样本编号\t报告编号\t嵌合率\t有效位点\tSD\tCV
                         printf SUM "%s\t%s\t%s\t%s\t%s\t%f%s\t%d\t%.2f%s\t%.2f%s\n", $name{$num3[$z]}, $hospital{$num3[$z]}, $sample{$num3[$z]}, $number{$num3[$z]}, $rptnum{$num3[$z]}, $count_avg[$z],"%",$count_n[$z], $SD[$z]*100,"%", $SD[$z]/$count_avg[$z]*10000,"%";
                 }
-
-#
                 # 如果 报告单编号 对应的 实验编码 不为3 或者 $sheet[$z] 对应的 "患者姓名"  的第二份及以后的报告，不生成嵌合曲线
                 if ($exp_num{$TCAID} != 3 or $sheet_name{$sheet[$z]} > 1){
                         $workbook -> close();
@@ -2520,9 +2509,94 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                 }
                 $RptBox -> Append("报告生成成功！");  # 更新 "生成报告" 部分的文本框中显示的提示信息
 
-#########################################  2020.05.24.14.32 ##########################################################
-######################################### 输出 "temp" 表单 ##########################################################
+                 ######################################### 存储 汇总报告单中需要的信息 ##########################################################
+                 #################### 定义一组变量用于存储 汇总报告单中需要的信息 ########################################################################################
+                #        my %this_patient_ID_and_report_id = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者本轮检测的汇总报告单的编号
+                #        my %this_patient_ID_and_patient_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者姓名
+                #        my %this_patient_ID_and_patient_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者年龄
+                #        my %this_patient_ID_and_patient_diagnosis = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者 诊断信息
+                #        my %this_patient_ID_and_patient_sampleType = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者样本类型 (外周血 / 骨髓 /骨髓血?)
+                #        my %this_patient_ID_and_patient_sampleDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者采样日期
+                #        my %this_patient_ID_and_patient_rcvDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者收样(接样)日期
+                #        my %this_patiend_ID_and_donor_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者姓名
+                #        my %this_patiend_ID_and_donor_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者性别
+                #        my %this_patiend_ID_and_donor_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者年龄
+                #        my %this_patiend_ID_and_dono_relationship = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者与他/她的关系
+                #        my %this_patiend_ID_and_hospital = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 医院全称
+                #        my %this_patiend_ID_and_doctor = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 送样医生
                 my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                if(!exists $this_patient_ID_and_report_id{$tempid}){
+                    my $report_id = (split(/-/,$TCAID))[0] ;
+                    print "L2555|$tempid|report_id:$TCAID=>$report_id\n";
+                    $this_patient_ID_and_report_id{$tempid} = $report_id ;
+                }
+                if(!exists $this_patient_ID_and_patient_name{$tempid}){
+                    print "L2559|$tempid|patient_name$name{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_name{$tempid} = $name{$num3[$z]} ;
+                }
+                if(!exists $this_patient_ID_and_patient_age{$tempid}){
+                    print "L2559|$tempid|patient_age:$age{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_age{$tempid} = $age{$num3[$z]} ;
+                }
+                if(!exists $this_patient_ID_and_patient_diagnosis{$tempid}){
+                    # 写入 患者的 临床诊断 信息
+                    if ($diagnosis{$num3[$z]} ne "-"){  # "术后患者" 的临床诊断不为 "-"
+                        print "L2569|$tempid|patient_diagnosis:$diagnosis{$num3[$z]}\n";
+                        $this_patient_ID_and_patient_diagnosis{$tempid} = $diagnosis{$num3[$z]} ;  # 根据 供患信息中 "诊断" 设置
+                    }else{
+                        print "L2569|$tempid|patient_diagnosis:$diagnosis{$num3[$z]}\n";
+                        $this_patient_ID_and_patient_diagnosis{$tempid} = $diagnosis{$num1[$z]} ;  # 根据术前患者的 实验编码 对应 供患信息中 "诊断" 设置
+                    }
+                }
+                if(!exists $this_patient_ID_and_patient_sampleType{$tempid}){
+                    my $patient_sampleType = "";
+                    if ($cells{$num3[$z]} =~ /(\S+)分选/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞分选 / T细胞分选 / NK细胞分选 ...)
+                        $patient_sampleType = $1;  # 根据 "分选类型" 得到: B细胞/T细胞/NK细胞/粒细胞
+                    }
+                    else{
+                        $patient_sampleType = $sample{$num3[$z]};  # 否则，将 $patiend_sampleType 设置为 "术后患者" 实验编码对应的 "样本类型"
+                    }
+                    print "L2583|$tempid|patient_sampleType:$patient_sampleType\n";
+                    $this_patient_ID_and_patient_sampleType{$tempid} = $patient_sampleType ;
+                }
+                if(!exists $this_patient_ID_and_patient_sampleDate{$tempid}){
+                    print "L2587|$tempid|patient_sampleDate:$date3{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_sampleDate{$tempid} = $date3{$num3[$z]} ;
+                }
+                if(!exists $this_patient_ID_and_patient_rcvDate{$tempid}){
+                    print "L2587|$tempid|patient_rcvDate:$date4{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_rcvDate{$tempid} = $date4{$num3[$z]} ;
+                }
+                if(!exists $this_patiend_ID_and_donor_name{$tempid}){
+                    print "L2595|$tempid|donor_name:$name{$num2[$z]}\n";
+                    $this_patiend_ID_and_donor_name{$tempid} = $name{$num2[$z]} ;
+                }
+                if(!exists $this_patiend_ID_and_donor_gender{$tempid}){
+                    print "L2599|$tempid|donor_gender:$gender{$num2[$z]\n";
+                    $this_patiend_ID_and_donor_gender{$tempid} = $gender{$num2[$z]} ;
+                }
+
+                if(!exists $this_patiend_ID_and_donor_age{$tempid}){
+                    print "L2604|$tempid|donor_age:$age{$num2[$z]}\n";
+                    $this_patiend_ID_and_donor_age{$tempid} = $age{$num2[$z]} ;
+                }
+
+                if(!exists $this_patiend_ID_and_dono_relationship{$tempid}){
+                    print "L2609|$tempid|dono_relationship:$relation{$num2[$z]}\n";
+                    $this_patiend_ID_and_dono_relationship{$tempid} = $relation{$num2[$z]} ;
+                }
+
+                if(!exists $this_patiend_ID_and_hospital{$tempid}){
+                    print "L2609|$tempid|hospital:$hospital{$num3[$z]}\n";
+                    $this_patiend_ID_and_hospital{$tempid} = $hospital{$num3[$z]} ;
+                }
+                if(!exists $this_patiend_ID_and_doctor{$tempid}){
+                    print "L2609|$tempid|doctor:$doctor{$num3[$z]}\n";
+                    $this_patiend_ID_and_doctor{$tempid} = $doctor{$num3[$z]} ;
+                }
+                #########################################  2020.05.24.14.32 ##########################################################
+                ######################################### 输出 "temp" 表单 ##########################################################
+                $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
                 my $i;
                 my $j = 1;
                 my $Chart_Marker_Num = 0;
@@ -2537,10 +2611,10 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                                 $Chmrsm =~ s/%//;  # 嵌合率是 百分比格式
                                 $Chmrsm = sprintf ("%.2f", $Chmrsm);  # 将 百分比格式 转换为 小数（保留小数点后2位）
                                 my $Smplid = $SampleID{$tempid}[$i];   # 实验编码 # 数组里每一个元素都是 hash表，用于存储每个 患者编码 对应的每次检测的 实验编码
-                                my $SmpType = $sampleType{$Smplid};  # 供患信息中 实验编码 对应的 样本类型
+                                my $SmpType = $sampleType{$Smplid};  # 供患信息中 实验编码 对应的 分选类型 / 样本类型
                                 next unless $SmpType;  # 如果样本类型为空，则跳到下一份报告单
                                 next if $SmpType eq "-";  # 如果样本类型为 "-"，则跳到下一份报告单
-                                my $rptDate = DateUnify($ReportDate{$tempid}[$i]·);  # 获取 患者编码 对应的 第i份 报告的 报告日期
+                                my $rptDate = DateUnify($ReportDate{$tempid}[$i]);  # 获取 患者编码 对应的 第i份 报告的 报告日期
                                 my $rcvDate = DateUnify($receiveDate{$Smplid});  # 获取 患者编码 对应的 第i份 报告的 收样日期
                                 my $smplDate = DateUnify($sampleDate{$Smplid});  # 获取 患者编码 对应的 第i份 报告的 采样日期
                                 my $tmpDate;
@@ -2558,7 +2632,7 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
 
                                 $Graphic_Chimerism{$tmpDate}{$SmpType} = $Chmrsm;  # 存储 样本 某个时间（采样日期 / 收样日期 / 报告日期）对应的 某个类型的样本 对应的 嵌合率结果
                                 $Graphic_SampleID{$tmpDate}{$SmpType} = $Smplid;  # 存储 样本 某个时间（采样日期 / 收养日期 / 报告日期）对应的 某个类型的样本 对应的 实验编码
-                                $Types{$SmpType} ++;  # 样本类型 个数递增
+                                $Types{$SmpType} ++;  print "L2561:$tempid|$TCAID|" . $SmpType . ":" . $Types{$SmpType} . "\n" ;# 样本类型 / 分选类型 个数递增 (这里 $Types{$SmpType} 没有判断是否存在，也没有设置初始化的值？ 默认初始化的值为 0 ? 测试一下看看)
                                 if ($date_seq[-1] ne $tmpDate || $tmpDate =~ /术后/){  # 将样本的 （采样日期 / 收样日期 / 报告日期）存入 @date_seq
                                         push @date_seq, $tmpDate;
                                         $j ++;
@@ -2566,7 +2640,7 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                                 $Chart_Marker_Num ++;  # 记录总的报告数？
                         }
 
-############################ 写入 temp 表单 #######################################
+                        ############################ 写入 temp 表单 #######################################
                         shift @date_seq;
                         my $headings;
                         push @{$headings}, decode('GB2312', '时间');
@@ -2591,7 +2665,7 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                         $graphic_temp -> write('A2', $write_data);  # 写入 每次检测的嵌合率结果
 
 
-############################ 输出 "嵌合曲线" 表单 #######################################
+                        ############################ 输出 "嵌合曲线" 表单 #######################################
                         $graphic->hide_gridlines();  # 隐藏 网格线
                         $graphic->keep_leading_zeros();  # 保留 开头的0
                         # 设置各列的宽度
@@ -2728,7 +2802,6 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                                 }
                                 $i ++;
                         }
-
                 }else{
 
                 }
@@ -2736,7 +2809,6 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                 # excel 文件写完，关闭文件
                 $workbook->close();
                 $RptBox -> Append("嵌合曲线生成成功！\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
-
         }
 
         # 输出 状态 提示信息 ($sb))
@@ -2759,6 +2831,206 @@ transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
 
         close SUM;
 
+        #############################  以 患者编码 为单位，按JRK的报告模板，输出每个患者 每次检测的多份样本的检测结果 ######################
+        $sb->Move( 0, ($main->ScaleHeight() - $sb->Height()) );
+        $sb->Resize( $main->ScaleWidth(), $sb->Height() );
+        $sb->Text("开始生成每个患者多份检测样本的合并报告，正在生成文件...");  # 状态条，输出提示信息
+        print "L2766:开始生成每个患者多份检测样本的合并报告，正在生成文件...\n" ;
+        # 遍历所有 患者编码
+        my $tt = 0 ;
+        for my $tempid (keys %Chimerism){
+            print "L2771:$tt\n" ;
+            if($tt >= 5){ print "Get out .. \n"; last; }
+            print "L2769:", $tempid,"|", $#{$Chimerism{$_}}+1,"\n";
+
+            # 定义 报告单 输出文件
+            ####### 需要获取 患者 本轮检测的报告单编号 ######
+            my $Output_rpt_str = sprintf "%s\\%s-%s.xlsx", $Output_Dir, "XXX",$tempid;
+            print "L2778:$Output_rpt_str\n" ;
+            my $workbook;
+            # 打开 报告输出文件，准备写报告
+            unless ($workbook = Excel::Writer::XLSX->new($Output_rpt_str)){
+                $error = $Output_rpt_str."无法保存！";
+                Win32::MsgBox $error, 0, "错误！";
+                $success = 0;
+                $RptBox -> Append($Output_rpt_str."打开失败！跳过\r\n");
+                next;
+            }
+
+            my ($countsheet, $graphic, $worksheet, $graphic_temp);
+            $worksheet  = $workbook ->add_worksheet(decode('GB2312',"报告"));  # 增加 "报告" 表单
+            $graphic = $workbook ->add_worksheet(decode('GB2312',"嵌合曲线"));  # 增加 "嵌合曲线" 表单
+            # $countsheet = $workbook->add_worksheet(decode('GB2312',"计算"));  # 汇总的报告中，暂时不输出 "计算" 表单 （信息太多，可到单个类型报告中核对）
+            $graphic_temp = $workbook->add_worksheet('temp');  # 增加 "temp" 表单
+
+            ########################################### 输出 "报告" 表单 ##########################################################
+            # 定义 "报告" 表单的各种格式
+            $worksheet->hide_gridlines();
+            $worksheet->keep_leading_zeros();
+            # 设置 列的宽度、行的高度
+            # $worksheet->set_column(0,0,0.5);
+            $worksheet->set_column(0,0,14.5);
+            $worksheet->set_column(1,1,10);
+            $worksheet->set_column(2,3,10);
+            $worksheet->set_column(4,5,10);
+            $worksheet->set_column(6,7,10);
+            # $worksheet->set_column(8,8,10);
+            my @rows = (73,8,3,18.4,14,14,14,14,14,14,14,14,14,10,20,20,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,18.4,10,10,10,10);
+            for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
+
+            # 设置页面的左右及上边距
+            $worksheet->set_margin_left(0.394);
+            $worksheet->set_margin_right(0.394);
+            $worksheet->set_margin_top(0.2);
+
+            ###################  定义excel文件各部分的格式  #######################################################
+            my $format1  = $workbook->add_format(size => 18, bold => 1, align => 'center',                      font => decode('GB2312','楷体')); # HLA高分辨基因分型检测报告
+            my $format2  = $workbook->add_format(size => 11,                                                                                     'top' => 1, 'bottom' => 2);  # 双线
+            my $format3  = $workbook->add_format(size => 11,            align => 'right',  valign => 'vcenter', font => decode('GB2312','宋体')); # 报告单编号
+            my $format4  = $workbook->add_format(size => 12, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 送检单位，检测项目 write
+            my $format5  = $workbook->add_format(size => 12, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 送检单位，检测项目 merge
+            my $format6  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，宋体，write
+            my $format7  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，宋体，merge
+            my $format8  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，Times New Roman，write
+            my $format9  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，Times New Roman，merge
+            my $format10 = $workbook->add_format(size => 10,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，Times New Roman，write，字号10
+            #my $format11 = $workbook->add_format(size => 10,                               valign => 'vcenter', font => decode('GB2312','宋体'), text_wrap => 1); # 备注
+            #my $format12 = $workbook->add_format(size => 11, bold => 1,                    valign => 'vcenter', font => decode('GB2312','宋体')); #
+            #my $format13 = $workbook->add_format(size => 11, bold => 1,                    valign => 'vcenter', font => decode('GB2312','宋体'),             'bottom' => 1);  # 检测者
+            #my $format14 = $workbook->add_format(size => 11, bold => 1,                    valign => 'vcenter', font => 'Times New Roman',                   'bottom' => 1);  # 报告日期
+            my $format15 = $workbook->add_format(size => 12,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 'STR位点' '位点状态' '备注'
+            my $format16 = $workbook->add_format(size => 9,             align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 结果栏样本编号
+            my $format17 = $workbook->add_format(size => 12, bold => 1,                    valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 0); # '检测结论'
+            my $format18 = $workbook->add_format(size => 11,                               valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 0, 'right' => 1); # 检测结论
+            my $format19 = $workbook->add_format(size => 8, valign => 'vcenter', font => decode('GB2312','华文中宋'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1, 'text_wrap' => 1,); #备注
+
+            #########################  chart的格式 ############################
+            my $Gfmt1 = $workbook->add_format(size => 10, align => 'right', font => decode('GB2312','宋体'));  # chart患者姓名
+            my $Gfmt2 = $workbook->add_format(size => 14, bold => 1, align => 'center', font => decode('GB2312','宋体')); # chart姓名
+            my $Gfmt3 = $workbook->add_format(size => 12, bold => 1, align => 'center', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1);# chart表头
+            my $Gfmt4 = $workbook->add_format(size => 10, align => 'center', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # chart表
+            my $Gfmt5 = $workbook->add_format(size => 14, bold => 1, font => decode('GB2312','宋体'));  # TCA定期检测流程
+            my $Gfmt6 = $workbook->add_format(size => 11, font => decode('GB2312','宋体'));  # 提示
+            my $Gfmt7 = $workbook->add_format(size => 11, align => 'center', font => decode('GB2312','宋体')); # 温馨提示
+            my $Gfmt8 = $workbook->add_format(size => 10, align => 'center', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # chart表
+            my $Gfmt9 = $workbook->add_format(size =>  9, align => 'center', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # chart表
+            $Gfmt8->set_num_format('0.00');
+            #####
+
+            # 设置表单的 页脚
+            #            my $footer = '&L'.decode('GB2312','检验实验室：广州君瑞康医学检验实验室')."\n".
+            #                         #'&R'.decode('GB2312','XXXX-X-X-0021-1.0')."\n".
+            #                         '&L'.decode('GB2312','咨询电话：0755-89323317').
+            #                         '&R'.decode('GB2312',$name{$num3[$z]}.'，第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
+            #            $worksheet->set_footer($footer);
+
+            # 在第一行第二列插入 公司logo (pic/荻硕贝肯logo.png)
+            $worksheet->insert_image('A1', "pic/logo.png", 10, 10, 0.73, 0.73);
+
+            # 写入 各项信息
+            ################## 报告头 部分 #########################
+            $worksheet->merge_range('A1:H1', decode('GB2312','广州君瑞康生物科技有限公司'), $format1);
+            $worksheet->merge_range('A2:H2', decode('GB2312',''), $format2);  # 留 空行
+            $worksheet->merge_range('A3:H3', decode('GB2312',''), $format2);  # 留 空行
+            $worksheet->merge_range('A4:H4', decode('GB2312','移植后嵌合体状态分析咨询报告'), $format4);  #
+
+            ################## 报告单编号 部分 #########################
+            $worksheet->merge_range('G5:H5', decode('GB2312','报告编号：'."Report_ID".'   '),$format3);
+
+            ################## 供患信息 部分 #########################
+            $worksheet->merge_range('A6:A7', decode('GB2312','姓名'), $format6);
+            $worksheet->merge_range('B6:B7', decode('GB2312','XXX'), $format6);
+            $worksheet->write('C06',decode('GB2312','性别'),$format4);
+            $worksheet->write('D06',decode('GB2312','XXX'),$format4);
+            $worksheet->write('E06',decode('GB2312','年龄'),$format4);
+            $worksheet->write('F06',decode('GB2312','XXX'),$format4);
+            $worksheet->write('G06',decode('GB2312','采样日期'),$format4);
+            $worksheet->write('H06',decode('GB2312','XXXX'),$format4);
+
+            $worksheet->write('C07',decode('GB2312','临床描述'),$format4);
+            $worksheet->write('D07',decode('GB2312','XXX'),$format4);
+            $worksheet->write('E07',decode('GB2312','样本类型'),$format4);
+            $worksheet->write('F07',decode('GB2312','XXX'),$format4);
+            $worksheet->write('G07',decode('GB2312','接样日期'),$format4);
+            $worksheet->write('H07',decode('GB2312','XXXX'),$format4);
+
+            $worksheet->write('A8', decode('GB2312','供者姓名'), $format6);
+            $worksheet->write('B8', decode('GB2312','XXX'), $format6);
+            $worksheet->write('C08',decode('GB2312','性别'),$format4);
+            $worksheet->write('D08',decode('GB2312','XXX'),$format4);
+            $worksheet->write('E08',decode('GB2312','年龄'),$format4);
+            $worksheet->write('F08',decode('GB2312','XXX'),$format4);
+            $worksheet->write('G08',decode('GB2312','供患关系'),$format4);
+            $worksheet->write('H08',decode('GB2312','XXXX'),$format4);
+
+            $worksheet->write('A09',decode('GB2312','送检单位'),$format4);
+            $worksheet->merge_range('B9:D9', decode('GB2312','XXXX医院'), $format6);
+            $worksheet->write('E09',decode('GB2312','送检专家'),$format4);
+            $worksheet->merge_range('F9:H9', decode('GB2312','XXXX医生'), $format6);
+
+            ################## 检测结果 部分 #########################
+            $worksheet->write('A10',decode('GB2312','检测结果：'),$format4);
+            # 每种 样本类型的检测结果 分别输出一行
+
+            # 本次检测所用 样本类型 的型别汇总表
+            $worksheet->merge_range('A15:H15', decode('GB2312',''), $format6);
+            $worksheet->merge_range('A16:A17', decode('GB2312','基因座'), $format6);
+            $worksheet->write('B16', decode('GB2312','样本编号\r\n' . "术前患者 实验编码"), $format6);
+            $worksheet->write('B17', decode('GB2312',"患者移植前"), $format6);
+            $worksheet->write('C16', decode('GB2312','样本编号\r\n' . "术前供者 实验编码"), $format6);
+            $worksheet->write('C17', decode('GB2312',"供者"), $format6);
+            # 判断样本类型为 外周血 or 骨髓 ？
+            my $sample_type = "外周血" ;
+            if ($sample_type eq "外周血"){
+                $worksheet->write('D16', decode('GB2312','样本编号\r\n' . "术后患者 实验编码"), $format6);
+                $worksheet->write('D17', decode('GB2312',"患者移植后\r\n\(外周血\)"), $format6);
+            } elsif ($sample_type eq "骨髓"){
+                $worksheet->write('D16', decode('GB2312','样本编号\r\n' . "术后患者 实验编码"), $format6);
+                $worksheet->write('D17', decode('GB2312',"患者移植后\r\n\(骨髓\)"), $format6);
+            }
+
+            # 术后患者 T细胞
+            $worksheet->write('E16', decode('GB2312','样本编号\r\n' . "术后患者T细胞 实验编码"), $format6);
+            $worksheet->write('E17', decode('GB2312',"患者移植后\r\n\(T细胞\)"), $format6);
+
+            # 术后患者 B细胞
+            $worksheet->write('F16', decode('GB2312','样本编号\r\n' . "术后患者B细胞 实验编码"), $format6);
+            $worksheet->write('F17', decode('GB2312',"患者移植后\r\n\(B细胞\)"), $format6);
+
+            # 术后患者 NK细胞
+            $worksheet->write('G16', decode('GB2312','样本编号\r\n' . "术后患者NK细胞 实验编码"), $format6);
+            $worksheet->write('G17', decode('GB2312',"患者移植后\r\n\(NK细胞\)"), $format6);
+
+            # 术后患者 粒细胞
+            $worksheet->write('H16', decode('GB2312','样本编号\r\n' . "术后患者粒细胞 实验编码"), $format6);
+            $worksheet->write('H17', decode('GB2312',"患者移植后\r\n\(粒细胞\)"), $format6);
+
+            # 在第一列 遍历写入25个marker名字
+            for my $q (0..$#markers_jrk){
+                $worksheet->write($q+17,0,$markers_jrk[$q], $format6);  # 写入 marker 名
+            }
+            # 遍历写入 "术前患者" "术前供者" "术后外周血/术后骨髓" "术后T细胞" "术后B细胞" "术后NK细胞" "术后粒细胞" 的型别信息
+            # To-do
+
+            # 检测者 + 复核者 + 报告日期 + 报告盖章
+            $worksheet->write('A43', decode('GB2312','检测者：'), $format6);
+            $worksheet->write('B43', decode('GB2312','XXX'), $format6);
+            $worksheet->write('D43', decode('GB2312','复核者：'), $format6);
+            $worksheet->write('E43', decode('GB2312','XXX'), $format6);
+            $worksheet->write('G43', decode('GB2312','报告日期：'), $format6);
+            $worksheet->write('H43', decode('GB2312','XXXX'), $format6);
+
+            ################## 备注 部分 #########################
+            $worksheet->write('A44', decode('GB2312','备注：'), $format6);
+            $worksheet->write('A45', decode('GB2312','1.本检测采用STR-PCR和毛细管电泳片段分析方法。'), $format6);
+            $worksheet->write('A46', decode('GB2312','2.本报告仅对本次检验的样本负责，结果仅供临床医生参考。'), $format6);
+            $worksheet->write('A47', decode('GB2312','3.样本保存有一定期限，若对报告结果有疑义，请在自报告日期起7天内提出复检申请，逾期不再受理。'), $format6);
+
+            # excel 文件写完，关闭文件
+            $workbook->close();
+            $RptBox -> Append("汇总报告 生成成功！\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
+            $tt ++ ;
+        }
 }
 
 ###################################################################################
