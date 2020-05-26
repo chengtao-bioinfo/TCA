@@ -1604,6 +1604,7 @@ sub RUN_Click{
         my %this_patient_ID_and_patient_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者年龄
         my %this_patient_ID_and_patient_diagnosis = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者 诊断信息
         my %this_patient_ID_and_patient_sampleType = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者样本类型 (外周血 / 骨髓 /骨髓血?)
+        my %this_patient_ID_and_patient_sampleDetailType = () ;  # 定义一个hash表，用户存储 患者编码 (如:HUN001胡琳) 对应的 患者样本详细类型  (骨髓血-B细胞分选...)
         my %this_patient_ID_and_patient_sampleDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者采样日期
         my %this_patient_ID_and_patient_rcvDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者收样(接样)日期
         my %this_patiend_ID_and_donor_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者姓名
@@ -1612,6 +1613,7 @@ sub RUN_Click{
         my %this_patiend_ID_and_dono_relationship = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者与他/她的关系
         my %this_patiend_ID_and_hospital = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 医院全称
         my %this_patiend_ID_and_doctor = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 送样医生
+        my %this_patiend_ID_sampleDetailType_and_conclusion = () ;  # 定义一个hash表，用于存储 患者编码 某个样本详细类型 对应的 结论
         %allele = ();
 
         foreach my $PrevKey1(keys %PrevAllele){  # %PrevAllele 保存已有数据中 每个 实验编码 的每个marker 对应的 型别信息
@@ -1842,9 +1844,10 @@ sub RUN_Click{
                         # printf "%s|%s|%s|%s|%s\n",        $TCAID, $num1[$z], $num2[$z], $num3[$z],$sheet[$z];
                 }elsif ($exp_num{$TCAID} == 3){  # 报告单编号 对应 3个实验编码
                         my @seq = split ",", $exp_seq{$TCAID};
-                        # print $exp_list[$seq[0]],"|", $allele{$exp_list[$seq[0]]}{D7S820},"\n";
-                        # print $exp_list[$seq[1]],"|", $allele{$exp_list[$seq[1]]}{D7S820},"\n";
-                        # print $exp_list[$seq[2]],"|", $allele{$exp_list[$seq[2]]}{D7S820},"\n";
+                        print "L1846:$TCAID|",$exp_list[$seq[0]],"|", $allele{$exp_list[$seq[0]]}{D7S820},"\n";
+                        print "L1847:$TCAID|",$exp_list[$seq[1]],"|", $allele{$exp_list[$seq[1]]}{D7S820},"\n";
+                        print "L1848:$TCAID|",$exp_list[$seq[2]],"|", $allele{$exp_list[$seq[2]]}{D7S820},"\n";
+                        print "L1849:$TCAID|", $conclusion[$z] , "\n";
 
                         # 检查 3个实验编码 在 %allele 中是否存在
                         unless (exists $allele{$exp_list[$seq[0]]}){
@@ -2098,7 +2101,7 @@ sub RUN_Click{
                 # <STDIN>;
 
                 # 判断 报告单编号 的结论是否为空
-                if ($conclusion[$z]){
+                if ($conclusion[$z]){  # 不为空
                         # 跳过 结论为 '跳过' 的报告单
                         if ($conclusion[$z] eq '跳过'){
                                 next;
@@ -2176,7 +2179,7 @@ sub RUN_Click{
         $RptBox -> Append("输出准备完成！开始输出报告\r\n========================\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
         # 遍历输出每一份报告
         foreach my $z(0..$#TCA_id){
-                my $TCAID = $TCA_id[$z];  # 获取 报告单编号
+                my $TCAID = $TCA_id[$z];  print "L2180:$z|$TCAID|$conclusion[$z]\n" ;# 获取 报告单编号
                 $RptBox -> Append($TCAID.'...');  # 更新 "生成报告" 部分的文本框中显示的提示信息
                 if ($conclusion[$z] eq '跳过'){  # 跳过 结论为 "跳过" 的报告单
                         $RptBox -> Append("跳过\r\n");
@@ -2366,8 +2369,10 @@ sub RUN_Click{
                      }
                 $worksheet->write('I05',decode('GB2312',$doctor{$num3[$z]}),$format4);
                 my $testt;
-                if ($cells{$num3[$z]} =~ /(\S+)分选/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞分选 / T细胞分选 / NK细胞分选 ...)
-                    $testt = $1.'嵌合状态分析';  # 根据 "分选类型" 动态输出 "检测项目"
+                my $cell_type = "" ;
+                if ($cells{$num3[$z]} =~ /(\S+)细胞分选/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞分选 / T细胞分选 / NK细胞分选 ...)
+                    $cell_type = $1 ;  # B / T / NK / 粒
+                    $testt = $cell_type.'细胞嵌合状态分析';  # 根据 "分选类型" 动态输出 "检测项目"
                 }
                 else{
                     $testt = '全血嵌合状态分析';
@@ -2443,16 +2448,17 @@ sub RUN_Click{
                 # 写入 "检测结论"
                 # 判断 样本的嵌合率 是否为 数字
                 if ($count_avg[$z] =~ /\d/){  # 如果为数字，则转换为百分比，保留2位有效数字
+                    print "L2448:$z|$count_avg[$z]|$conclusion[$z]\n";
                         $count_avg[$z] = sprintf("%.2f", $count_avg[$z]*100);
-                        unless ($conclusion[$z]){  # 报告对应的结论 不为 空
+                        unless ($conclusion[$z]){  # 报告对应的结论 为 空
                                 if($count_avg[$z] >= 95){  # 嵌合率 >= 95%  ==> 完全嵌合
-                                        $conclusion[$z] = '患者移植后供者细胞占'.$count_avg[$z].'%，表现为完全嵌合状态。';
+                                        $conclusion[$z] = '患者移植后'. $sample{$num3[$z]} . '中供者'. $cell_type . '细胞占'.$count_avg[$z].'%，表现为完全嵌合状态。';
                                         $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
                                 }elsif($count_avg[$z] < 5){  # 嵌合率 < 5% ==> 微嵌合
-                                        $conclusion[$z] = '患者移植后供者细胞占'.$count_avg[$z].'%，表现为微嵌合状态。';
+                                        $conclusion[$z] = '患者移植后'. $sample{$num3[$z]} . '中供者'. $cell_type. '细胞占'.$count_avg[$z].'%，表现为微嵌合状态。';
                                         $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
                                 }else{  # 5% <= 嵌合率 < 95%  ==> 混合嵌合
-                                        $conclusion[$z] = '患者移植后供者细胞占'.$count_avg[$z].'%，表现为混合嵌合状态。';
+                                        $conclusion[$z] = '患者移植后'. $sample{$num3[$z]} . '中供者'. $cell_type. '细胞占'.$count_avg[$z].'%，表现为混合嵌合状态。';
                                         $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
                                 }
                         }else{
@@ -2460,6 +2466,124 @@ sub RUN_Click{
                         }
                 }else{
                         $worksheet->merge_range('C34:I34',decode('GB2312','无'), $format18);
+                }
+
+                ######################################### 存储 汇总报告单中需要的信息 ##########################################################
+                 #################### 定义一组变量用于存储 汇总报告单中需要的信息 ########################################################################################
+                #        my %this_patient_ID_and_report_id = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者本轮检测的汇总报告单的编号
+                #        my %this_patient_ID_and_patient_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者姓名
+                #        my %this_patient_ID_and_patient_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者性别
+                #        my %this_patient_ID_and_patient_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者年龄
+                #        my %this_patient_ID_and_patient_diagnosis = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者 诊断信息
+                #        my %this_patient_ID_and_patient_sampleType = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者样本类型 (外周血 / 骨髓 /骨髓血?)
+                #        my %this_patient_ID_and_patient_sampleDetailType = () ;  # 定义一个hash表，用户存储 患者编码 (如:HUN001胡琳) 对应的 患者样本详细类型  (骨髓血-B细胞分选...)
+                #        my %this_patient_ID_and_patient_sampleDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者采样日期
+                #        my %this_patient_ID_and_patient_rcvDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者收样(接样)日期
+                #        my %this_patiend_ID_and_donor_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者姓名
+                #        my %this_patiend_ID_and_donor_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者性别
+                #        my %this_patiend_ID_and_donor_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者年龄
+                #        my %this_patiend_ID_and_dono_relationship = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者与他/她的关系
+                #        my %this_patiend_ID_and_hospital = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 医院全称
+                #        my %this_patiend_ID_and_doctor = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 送样医生
+                #        my %this_patiend_ID_sampleDetailType_and_conclusion = () ;  # 定义一个hash表，用于存储 患者编码 某个样本详细类型 对应的 结论
+                my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                print "L2485:$z|$TCAID|$tempid\n" ;
+                if(!exists $this_patient_ID_and_report_id{$tempid}){
+                    my $report_id = (split(/-/,$TCAID))[0] ;
+                    print "L2488|$tempid|report_id:$TCAID=>$report_id\n";
+                    $this_patient_ID_and_report_id{$tempid} = $report_id ;
+                }
+                if(!exists $this_patient_ID_and_patient_name{$tempid}){
+                    print "L2492|$tempid|patient_name$name{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_name{$tempid} = $name{$num3[$z]} ;
+                }
+                if(!exists $this_patient_ID_and_patient_gender{$tempid}){
+                    print "L2496|$tempid|patient_gender:$gender{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_gender{$tempid} = $gender{$num3[$z]} ;
+                }
+                if(!exists $this_patient_ID_and_patient_age{$tempid}){
+                    print "L2500|$tempid|patient_age:$age{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_age{$tempid} = $age{$num3[$z]} ;
+                }
+                if(!exists $this_patient_ID_and_patient_diagnosis{$tempid}){
+                    # 写入 患者的 临床诊断 信息
+                    if ($diagnosis{$num3[$z]} ne "-"){  # "术后患者" 的临床诊断不为 "-"
+                        print "L2506|$tempid|patient_diagnosis:$diagnosis{$num3[$z]}\n";
+                        $this_patient_ID_and_patient_diagnosis{$tempid} = $diagnosis{$num3[$z]} ;  # 根据 供患信息中 "诊断" 设置
+                    }else{
+                        print "L2509|$tempid|patient_diagnosis:$diagnosis{$num3[$z]}\n";
+                        $this_patient_ID_and_patient_diagnosis{$tempid} = $diagnosis{$num1[$z]} ;  # 根据术前患者的 实验编码 对应 供患信息中 "诊断" 设置
+                    }
+                }
+                if(!exists $this_patient_ID_and_patient_sampleType{$tempid}){
+                    my $patient_sampleType = $sample{$num3[$z]};
+                    #if ($cells{$num3[$z]} =~ /(\S+)分选/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞分选 / T细胞分选 / NK细胞分选 ...)
+                    #    $patient_sampleType = $1;  # 根据 "分选类型" 得到: B细胞/T细胞/NK细胞/粒细胞
+                    #}
+                    #else{
+                    #    $patient_sampleType = $sample{$num3[$z]};  # 否则，将 $patiend_sampleType 设置为 "术后患者" 实验编码对应的 "样本类型"
+                    #}
+                    print "L2523|$tempid|patient_sampleType:$patient_sampleType\n";
+                    $this_patient_ID_and_patient_sampleType{$tempid} = $patient_sampleType ;
+                }
+                ########### 这里有问题  ###############
+                # if(!exists $this_patient_ID_and_patient_sampleDetailType{$tempid}){
+                #     print "L2525:$z|$num3[$z]|$cells{$num3[$z]}\n" ;
+                #     my $patiend_sampleDetailType = "" ;
+                #     if ($cells{$num3[$z]}){
+                #         $patiend_sampleDetailType = $sample{$num3[$z]} . "-" . $cells{$num3[$z]} ;
+                #     } else {
+                #         $patiend_sampleDetailType = $sample{$num3[$z]} ;
+                #     }
+                #     print "L2525|$tempid|patient_sampleDetailType:$patiend_sampleDetailType\n";
+                #     $this_patient_ID_and_patient_sampleDetailType{$tempid} = $patiend_sampleDetailType ;
+                # }
+                if(!exists $this_patient_ID_and_patient_sampleDate{$tempid}){
+                    print "L2529|$tempid|patient_sampleDate:$date3{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_sampleDate{$tempid} = $date3{$num3[$z]} ;
+                }
+                if(!exists $this_patient_ID_and_patient_rcvDate{$tempid}){
+                    print "L2533|$tempid|patient_rcvDate:$date4{$num3[$z]}\n";
+                    $this_patient_ID_and_patient_rcvDate{$tempid} = $date4{$num3[$z]} ;
+                }
+                if(!exists $this_patiend_ID_and_donor_name{$tempid}){
+                    print "L2537|$tempid|donor_name:$name{$num2[$z]}\n";
+                    $this_patiend_ID_and_donor_name{$tempid} = $name{$num2[$z]} ;
+                }
+                if(!exists $this_patiend_ID_and_donor_gender{$tempid}){
+                    print "L2541|$tempid|donor_gender:$gender{$num2[$z]}\n";
+                    $this_patiend_ID_and_donor_gender{$tempid} = $gender{$num2[$z]} ;
+                }
+
+                if(!exists $this_patiend_ID_and_donor_age{$tempid}){
+                    print "L2546|$tempid|donor_age:$age{$num2[$z]}\n";
+                    $this_patiend_ID_and_donor_age{$tempid} = $age{$num2[$z]} ;
+                }
+
+                if(!exists $this_patiend_ID_and_dono_relationship{$tempid}){
+                    print "L2551|$tempid|dono_relationship:$relation{$num2[$z]}\n";
+                    $this_patiend_ID_and_dono_relationship{$tempid} = $relation{$num2[$z]} ;
+                }
+
+                if(!exists $this_patiend_ID_and_hospital{$tempid}){
+                    print "L2556|$tempid|hospital:$hospital{$num3[$z]}\n";
+                    $this_patiend_ID_and_hospital{$tempid} = $hospital{$num3[$z]} ;
+                }
+                if(!exists $this_patiend_ID_and_doctor{$tempid}){
+                    print "L2560|$tempid|doctor:$doctor{$num3[$z]}\n";
+                    $this_patiend_ID_and_doctor{$tempid} = $doctor{$num3[$z]} ;
+                }
+                # 获取当前报告单 对应的 sampleDetailType
+                my $patiend_sampleDetailType = "" ;  print "L2575:$cells{$num3[$z]}\n" ;
+                if ($cells{$num3[$z]} ne "-"){
+                    $patiend_sampleDetailType = $sample{$num3[$z]} . "-" . $cells{$num3[$z]} ;
+                } else {
+                    $patiend_sampleDetailType = $sample{$num3[$z]} ;
+                }
+                print "L2581|$tempid|patiend_sampleDetailType:$patiend_sampleDetailType\n" ;
+                if(!exists $this_patiend_ID_sampleDetailType_and_conclusion{$tempid}{$patiend_sampleDetailType}){
+                    print "L2683|$tempid|$patiend_sampleDetailType|conclusion:$conclusion[$z]\n";
+                    $this_patiend_ID_sampleDetailType_and_conclusion{$tempid}{$patiend_sampleDetailType} = $conclusion[$z] ;
                 }
 
                 # 写入 "备注" 表头
@@ -2503,6 +2627,7 @@ sub RUN_Click{
                         printf SUM "%s\t%s\t%s\t%s\t%s\t%f%s\t%d\t%.2f%s\t%.2f%s\n", $name{$num3[$z]}, $hospital{$num3[$z]}, $sample{$num3[$z]}, $number{$num3[$z]}, $rptnum{$num3[$z]}, $count_avg[$z],"%",$count_n[$z], $SD[$z]*100,"%", $SD[$z]/$count_avg[$z]*10000,"%";
                 }
                 # 如果 报告单编号 对应的 实验编码 不为3 或者 $sheet[$z] 对应的 "患者姓名"  的第二份及以后的报告，不生成嵌合曲线
+                print "L2610:$z|$TCAID|$exp_num{$TCAID}|$sheet_name{$sheet[$z]}\n" ;
                 if ($exp_num{$TCAID} != 3 or $sheet_name{$sheet[$z]} > 1){
                         $workbook -> close();
                         $RptBox -> Append("报告生成成功！无嵌合曲线\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
@@ -2510,96 +2635,6 @@ sub RUN_Click{
                 }
                 $RptBox -> Append("报告生成成功！");  # 更新 "生成报告" 部分的文本框中显示的提示信息
 
-                 ######################################### 存储 汇总报告单中需要的信息 ##########################################################
-                 #################### 定义一组变量用于存储 汇总报告单中需要的信息 ########################################################################################
-                #        my %this_patient_ID_and_report_id = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者本轮检测的汇总报告单的编号
-                #        my %this_patient_ID_and_patient_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者姓名
-                #        my %this_patient_ID_and_patient_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者性别
-                #        my %this_patient_ID_and_patient_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者年龄
-                #        my %this_patient_ID_and_patient_diagnosis = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者 诊断信息
-                #        my %this_patient_ID_and_patient_sampleType = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者样本类型 (外周血 / 骨髓 /骨髓血?)
-                #        my %this_patient_ID_and_patient_sampleDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者采样日期
-                #        my %this_patient_ID_and_patient_rcvDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者收样(接样)日期
-                #        my %this_patiend_ID_and_donor_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者姓名
-                #        my %this_patiend_ID_and_donor_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者性别
-                #        my %this_patiend_ID_and_donor_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者年龄
-                #        my %this_patiend_ID_and_dono_relationship = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者与他/她的关系
-                #        my %this_patiend_ID_and_hospital = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 医院全称
-                #        my %this_patiend_ID_and_doctor = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 送样医生
-                my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
-                if(!exists $this_patient_ID_and_report_id{$tempid}){
-                    my $report_id = (split(/-/,$TCAID))[0] ;
-                    print "L2532|$tempid|report_id:$TCAID=>$report_id\n";
-                    $this_patient_ID_and_report_id{$tempid} = $report_id ;
-                }
-                if(!exists $this_patient_ID_and_patient_name{$tempid}){
-                    print "L2536|$tempid|patient_name$name{$num3[$z]}\n";
-                    $this_patient_ID_and_patient_name{$tempid} = $name{$num3[$z]} ;
-                }
-                if(!exists $this_patient_ID_and_patient_gender{$tempid}){
-                    print "L2540|$tempid|patient_gender:$gender{$num3[$z]}\n";
-                    $this_patient_ID_and_patient_gender{$tempid} = $gender{$num3[$z]} ;
-                }
-                if(!exists $this_patient_ID_and_patient_age{$tempid}){
-                    print "L2544|$tempid|patient_age:$age{$num3[$z]}\n";
-                    $this_patient_ID_and_patient_age{$tempid} = $age{$num3[$z]} ;
-                }
-                if(!exists $this_patient_ID_and_patient_diagnosis{$tempid}){
-                    # 写入 患者的 临床诊断 信息
-                    if ($diagnosis{$num3[$z]} ne "-"){  # "术后患者" 的临床诊断不为 "-"
-                        print "L2550|$tempid|patient_diagnosis:$diagnosis{$num3[$z]}\n";
-                        $this_patient_ID_and_patient_diagnosis{$tempid} = $diagnosis{$num3[$z]} ;  # 根据 供患信息中 "诊断" 设置
-                    }else{
-                        print "L2553|$tempid|patient_diagnosis:$diagnosis{$num3[$z]}\n";
-                        $this_patient_ID_and_patient_diagnosis{$tempid} = $diagnosis{$num1[$z]} ;  # 根据术前患者的 实验编码 对应 供患信息中 "诊断" 设置
-                    }
-                }
-                if(!exists $this_patient_ID_and_patient_sampleType{$tempid}){
-                    my $patient_sampleType = "";
-                    if ($cells{$num3[$z]} =~ /(\S+)分选/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞分选 / T细胞分选 / NK细胞分选 ...)
-                        $patient_sampleType = $1;  # 根据 "分选类型" 得到: B细胞/T细胞/NK细胞/粒细胞
-                    }
-                    else{
-                        $patient_sampleType = $sample{$num3[$z]};  # 否则，将 $patiend_sampleType 设置为 "术后患者" 实验编码对应的 "样本类型"
-                    }
-                    print "L2565|$tempid|patient_sampleType:$patient_sampleType\n";
-                    $this_patient_ID_and_patient_sampleType{$tempid} = $patient_sampleType ;
-                }
-                if(!exists $this_patient_ID_and_patient_sampleDate{$tempid}){
-                    print "L2569|$tempid|patient_sampleDate:$date3{$num3[$z]}\n";
-                    $this_patient_ID_and_patient_sampleDate{$tempid} = $date3{$num3[$z]} ;
-                }
-                if(!exists $this_patient_ID_and_patient_rcvDate{$tempid}){
-                    print "L2573|$tempid|patient_rcvDate:$date4{$num3[$z]}\n";
-                    $this_patient_ID_and_patient_rcvDate{$tempid} = $date4{$num3[$z]} ;
-                }
-                if(!exists $this_patiend_ID_and_donor_name{$tempid}){
-                    print "L2577|$tempid|donor_name:$name{$num2[$z]}\n";
-                    $this_patiend_ID_and_donor_name{$tempid} = $name{$num2[$z]} ;
-                }
-                if(!exists $this_patiend_ID_and_donor_gender{$tempid}){
-                    print "L2581|$tempid|donor_gender:$gender{$num2[$z]\n";
-                    $this_patiend_ID_and_donor_gender{$tempid} = $gender{$num2[$z]} ;
-                }
-
-                if(!exists $this_patiend_ID_and_donor_age{$tempid}){
-                    print "L2686|$tempid|donor_age:$age{$num2[$z]}\n";
-                    $this_patiend_ID_and_donor_age{$tempid} = $age{$num2[$z]} ;
-                }
-
-                if(!exists $this_patiend_ID_and_dono_relationship{$tempid}){
-                    print "L2691|$tempid|dono_relationship:$relation{$num2[$z]}\n";
-                    $this_patiend_ID_and_dono_relationship{$tempid} = $relation{$num2[$z]} ;
-                }
-
-                if(!exists $this_patiend_ID_and_hospital{$tempid}){
-                    print "L2696|$tempid|hospital:$hospital{$num3[$z]}\n";
-                    $this_patiend_ID_and_hospital{$tempid} = $hospital{$num3[$z]} ;
-                }
-                if(!exists $this_patiend_ID_and_doctor{$tempid}){
-                    print "L2600|$tempid|doctor:$doctor{$num3[$z]}\n";
-                    $this_patiend_ID_and_doctor{$tempid} = $doctor{$num3[$z]} ;
-                }
                 #########################################  2020.05.24.14.32 ##########################################################
                 ######################################### 输出 "temp" 表单 ##########################################################
                 $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
@@ -2638,7 +2673,7 @@ sub RUN_Click{
 
                                 $Graphic_Chimerism{$tmpDate}{$SmpType} = $Chmrsm;  # 存储 样本 某个时间（采样日期 / 收样日期 / 报告日期）对应的 某个类型的样本 对应的 嵌合率结果
                                 $Graphic_SampleID{$tmpDate}{$SmpType} = $Smplid;  # 存储 样本 某个时间（采样日期 / 收养日期 / 报告日期）对应的 某个类型的样本 对应的 实验编码
-                                $Types{$SmpType} ++;  print "L2561:$tempid|$TCAID|" . $SmpType . ":" . $Types{$SmpType} . "\n" ;# 样本类型 / 分选类型 个数递增 (这里 $Types{$SmpType} 没有判断是否存在，也没有设置初始化的值？ 默认初始化的值为 0 ? 测试一下看看)
+                                $Types{$SmpType} ++;  print "L2649:$tempid|$TCAID|" . $SmpType . ":" . $Types{$SmpType} . "\n" ;# 样本类型 / 分选类型 个数递增 (这里 $Types{$SmpType} 没有判断是否存在，也没有设置初始化的值？ 默认初始化的值为 0 ? 测试一下看看)
                                 if ($date_seq[-1] ne $tmpDate || $tmpDate =~ /术后/){  # 将样本的 （采样日期 / 收样日期 / 报告日期）存入 @date_seq
                                         push @date_seq, $tmpDate;
                                         $j ++;
@@ -2851,7 +2886,7 @@ sub RUN_Click{
 
             # 定义 报告单 输出文件
             ####### 需要获取 患者 本轮检测的报告单编号 ######
-            my $Output_rpt_str = sprintf "%s\\%s-%s.xlsx", $Output_Dir, "XXX",$tempid;
+            my $Output_rpt_str = sprintf "%s\\%s-%s.xlsx", $Output_Dir, $this_patient_ID_and_report_id{$tempid} ,$tempid;
             print "L2778:$Output_rpt_str\n" ;
             my $workbook;
             # 打开 报告输出文件，准备写报告
@@ -2881,7 +2916,7 @@ sub RUN_Click{
             $worksheet->set_column(4,5,10);
             $worksheet->set_column(6,7,10);
             # $worksheet->set_column(8,8,10);
-            my @rows = (73,8,3,18.4,14,14,14,14,14,14,14,14,14,10,20,20,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,18.4,10,10,10,10);
+            my @rows = (73,8,3,18.4,14,14,14,14,14,14,14,14,14,10,5,40,40,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,18.4,10,10,10,10);
             for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
 
             # 设置页面的左右及上边距
@@ -2993,39 +3028,64 @@ sub RUN_Click{
             ################## 检测结果 部分 #########################
             $worksheet->write('A10',decode('GB2312','检测结果：'),$format4);
             # 每种 样本类型的检测结果 分别输出一行
+            my @this_patiend_conclusions = $this_patiend_ID_sampleDetailType_and_conclusion{$tempid}
+            for my $q (0..$#this_patiend_conclusions){
+                print "L3033:$q|$this_patiend_conclusions[$q]\n";
+                $worksheet->write($q+10,0,$this_patiend_conclusions[$q], $format4);  # 写入每一类样本的结论
+            }
 
             # 本次检测所用 样本类型 的型别汇总表
             $worksheet->merge_range('A15:H15', decode('GB2312',''), $format6);
             $worksheet->merge_range('A16:A17', decode('GB2312','基因座'), $format6);
-            $worksheet->write('B16', decode('GB2312','样本编号\r\n' . "术前患者 实验编码"), $format6);
+            $worksheet->write('B16', decode('GB2312','样本编号
+XXXX'), $format6);
             $worksheet->write('B17', decode('GB2312',"患者移植前"), $format6);
-            $worksheet->write('C16', decode('GB2312','样本编号\r\n' . "术前供者 实验编码"), $format6);
+            $worksheet->write('C16', decode('GB2312','样本编号
+XXXX'), $format6);
             $worksheet->write('C17', decode('GB2312',"供者"), $format6);
             # 判断样本类型为 外周血 or 骨髓 ？
-            my $sample_type = "外周血" ;
-            if ($sample_type eq "外周血"){
-                $worksheet->write('D16', decode('GB2312','样本编号\r\n' . "术后患者 实验编码"), $format6);
-                $worksheet->write('D17', decode('GB2312',"患者移植后\r\n\(外周血\)"), $format6);
-            } elsif ($sample_type eq "骨髓"){
-                $worksheet->write('D16', decode('GB2312','样本编号\r\n' . "术后患者 实验编码"), $format6);
-                $worksheet->write('D17', decode('GB2312',"患者移植后\r\n\(骨髓\)"), $format6);
+
+            my $sample_type = $this_patient_ID_and_patient_sampleType{$tempid}  ;
+            if ($sample_type eq "外周血" || $sample_type eq "全血"){
+                $worksheet->write('D16', decode('GB2312','样本编号
+XXXX'), $format6);
+                $worksheet->write('D17', decode('GB2312','患者移植后
+(外周血)'), $format6);
+            } elsif ($sample_type eq "骨髓" || $sample_type eq "骨髓血" ){
+                $worksheet->write('D16', decode('GB2312','样本编号
+XXXX'), $format6);
+                $worksheet->write('D17', decode('GB2312','患者移植后
+(骨髓血)'), $format6);
+            } else {
+                $worksheet->write('D16', decode('GB2312','样本编号
+XXXX'), $format6);
+                $worksheet->write('D17', decode('GB2312','患者移植后
+(其他)'), $format6);
             }
 
             # 术后患者 T细胞
-            $worksheet->write('E16', decode('GB2312','样本编号\r\n' . "术后患者T细胞 实验编码"), $format6);
-            $worksheet->write('E17', decode('GB2312',"患者移植后\r\n\(T细胞\)"), $format6);
+            $worksheet->write('E16', decode('GB2312','样本编号
+XXXX'), $format6);
+            $worksheet->write('E17', decode('GB2312','患者移植后
+(T细胞)'), $format6);
 
             # 术后患者 B细胞
-            $worksheet->write('F16', decode('GB2312','样本编号\r\n' . "术后患者B细胞 实验编码"), $format6);
-            $worksheet->write('F17', decode('GB2312',"患者移植后\r\n\(B细胞\)"), $format6);
+            $worksheet->write('F16', decode('GB2312','样本编号
+XXXX'), $format6);
+            $worksheet->write('F17', decode('GB2312','患者移植后
+(B细胞)'), $format6);
 
             # 术后患者 NK细胞
-            $worksheet->write('G16', decode('GB2312','样本编号\r\n' . "术后患者NK细胞 实验编码"), $format6);
-            $worksheet->write('G17', decode('GB2312',"患者移植后\r\n\(NK细胞\)"), $format6);
+            $worksheet->write('G16', decode('GB2312','样本编号
+XXXX'), $format6);
+            $worksheet->write('G17', decode('GB2312','患者移植后
+(NK细胞)'), $format6);
 
             # 术后患者 粒细胞
-            $worksheet->write('H16', decode('GB2312','样本编号\r\n' . "术后患者粒细胞 实验编码"), $format6);
-            $worksheet->write('H17', decode('GB2312',"患者移植后\r\n\(粒细胞\)"), $format6);
+            $worksheet->write('H16', decode('GB2312','样本编号
+XXXX'), $format6);
+            $worksheet->write('H17', decode('GB2312','患者移植后
+(粒细胞)'), $format6);
 
             # 在第一列 遍历写入25个marker名字
             for my $q (0..$#markers_jrk){
