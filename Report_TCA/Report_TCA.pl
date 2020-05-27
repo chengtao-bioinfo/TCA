@@ -2976,40 +2976,42 @@ sub RUN_Click{
             $worksheet->keep_leading_zeros();
             # 设置 列的宽度、行的高度
             # $worksheet->set_column(0,0,0.5);
-            $worksheet->set_column(0,0,14.5);
-            $worksheet->set_column(1,1,10);
-            $worksheet->set_column(2,3,10);
-            $worksheet->set_column(4,5,10);
-            $worksheet->set_column(6,7,10);
+            $worksheet->set_column(0,0,12);
+            $worksheet->set_column(1,1,11);
+            $worksheet->set_column(2,3,11);
+            $worksheet->set_column(4,5,11);
+            $worksheet->set_column(6,7,11);
             # $worksheet->set_column(8,8,10);
-            my @rows = (63,8,3,18.4,14,14,14,14,14,14,14,14,14,14,14,15,15,15,15,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,18.4,10,10,10,10);
+            my @rows = (56,3,3,28,18,14,14,14,14,14,14,14,14,14,14,18,18,18,18,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,35,14,14,14,20);
             for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
 
             # 设置页面的左右及上边距
-            $worksheet->set_margin_left(0.394);
-            $worksheet->set_margin_right(0.394);
+            $worksheet->set_margin_left(0.3);
+            $worksheet->set_margin_right(0.3);
             $worksheet->set_margin_top(0.2);
 
             ###################  定义excel文件各部分的格式  #######################################################
-            my $format1  = $workbook->add_format(size => 18, bold => 1, align => 'center',                      font => decode('GB2312','楷体')); # HLA高分辨基因分型检测报告
-            my $format2  = $workbook->add_format(size => 11,                                                                                     'top' => 1, 'bottom' => 2);  # 双线
-            my $format3  = $workbook->add_format(size => 11,            align => 'right',  valign => 'vcenter', font => decode('GB2312','宋体')); # 报告单编号
-            my $format4  = $workbook->add_format(size => 12, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 送检单位，检测项目 write
-            my $format5  = $workbook->add_format(size => 12, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 送检单位，检测项目 merge
-            my $format6  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，宋体，write
-            my $format7  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，宋体，merge
-            my $format8  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，Times New Roman，write
-            my $format9  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，Times New Roman，merge
-            my $format10 = $workbook->add_format(size => 10,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 信息/结果，Times New Roman，write，字号10
-            #my $format11 = $workbook->add_format(size => 10,                               valign => 'vcenter', font => decode('GB2312','宋体'), text_wrap => 1); # 备注
-            #my $format12 = $workbook->add_format(size => 11, bold => 1,                    valign => 'vcenter', font => decode('GB2312','宋体')); #
-            #my $format13 = $workbook->add_format(size => 11, bold => 1,                    valign => 'vcenter', font => decode('GB2312','宋体'),             'bottom' => 1);  # 检测者
-            #my $format14 = $workbook->add_format(size => 11, bold => 1,                    valign => 'vcenter', font => 'Times New Roman',                   'bottom' => 1);  # 报告日期
-            my $format15 = $workbook->add_format(size => 12,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 'STR位点' '位点状态' '备注'
-            my $format16 = $workbook->add_format(size => 9,             align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 结果栏样本编号
-            my $format17 = $workbook->add_format(size => 12, bold => 1,                    valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 0); # '检测结论'
-            my $format18 = $workbook->add_format(size => 11,                               valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 0, 'right' => 1); # 检测结论
-            my $format19 = $workbook->add_format(size => 8, valign => 'vcenter', font => decode('GB2312','华文中宋'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1, 'text_wrap' => 1,); #备注
+            my $format1  = $workbook->add_format(size => 18, bold => 1, align => 'center',                      font => decode('GB2312','楷体'), color => '003399', 'bottom' => 2); # "广州君瑞康生物科技有限公司"
+            my $format2  = $workbook->add_format(size => 11);  # 不画 框线
+            my $format3  = $workbook->add_format(size => 18, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体')); # "移植后嵌合体状态分析咨询报告"
+            my $format4  = $workbook->add_format(size => 12,            align => 'right',  valign => 'vcenter', font => decode('GB2312','宋体')); # "报告单编号"
+            my $format5  = $workbook->add_format(size => 12,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 患者 及 供者信息表 单元格 格式
+            my $format6  = $workbook->add_format(size => 12, bold => 1, align => 'left', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1,                'left' => 1, 'right' => 1); # "检测结果:"
+            my $format7  = $workbook->add_format(size => 12, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'),                            'left' => 1, 'right' => 1); # 检测结果 内容
+            my $format8  = $workbook->add_format(size => 12,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # "基因座"
+            my $format9  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1,                'left' => 1, 'right' => 1); # "样本编号"
+            my $format10 = $workbook->add_format(size => 10,             align => 'center', valign => 'vcenter', font => 'Times New Roman',                   'bottom' => 1, 'left' => 1, 'right' => 1); # 样本编号 内容
+            my $format11 = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1,  'bottom' => 1, 'left' => 1, 'right' => 1); # "患者移植前" 和 "供者"
+            my $format12 = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1,                 'left' => 1, 'right' => 1); # "患者移植后"
+            my $format13 = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'),              'bottom' => 1, 'left' => 1, 'right' => 1); # "(骨髓血)/(外周血)" / "(T细胞)" / "(B细胞)" / "(NK细胞)" / "(粒细胞)"
+            my $format14 = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1,  'bottom' => 1, 'left' => 1, 'right' => 1);  # marker名称
+            my $format15 = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'),  'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # marker 的型别
+            my $format16 = $workbook->add_format(size => 12,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'));  # "检测者" | "复核者" | "报告日期" 及其 内容
+            my $format17  = $workbook->add_format(size => 12,           align => 'center', valign => 'vcenter', font => decode('GB2312','华文中宋'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # "备注"
+            my $format18 = $workbook->add_format(size => 8, valign => 'vcenter', font => decode('GB2312','华文中宋'), 'top' => 1, 'left' => 1, 'right' => 1, 'text_wrap' => 1); #备注的 第一行 内容
+            my $format19 = $workbook->add_format(size => 8, valign => 'vcenter', font => decode('GB2312','华文中宋'),             'left' => 1, 'right' => 1, 'text_wrap' => 1); #备注的 第二-三行 内容
+            my $format20 = $workbook->add_format(size => 8, valign => 'top',     font => decode('GB2312','华文中宋'), 'bottom' => 1, 'left' => 1, 'right' => 1, 'text_wrap' => 1); #备注的 第四行 内容
+
 
             #########################  chart的格式 ############################
             my $Gfmt1 = $workbook->add_format(size => 10, align => 'right', font => decode('GB2312','宋体'));  # chart患者姓名
@@ -3025,81 +3027,58 @@ sub RUN_Click{
             #####
 
             # 设置表单的 页脚
-            #            my $footer = '&L'.decode('GB2312','检验实验室：广州君瑞康医学检验实验室')."\n".
-            #                         #'&R'.decode('GB2312','XXXX-X-X-0021-1.0')."\n".
-            #                         '&L'.decode('GB2312','咨询电话：0755-89323317').
-            #                         '&R'.decode('GB2312',$name{$num3[$z]}.'，第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
-            #            $worksheet->set_footer($footer);
+            my $footer = '&L'.decode('GB2312','检验实验室：广州君瑞康医学检验实验室')."\n".
+                         #'&R'.decode('GB2312','XXXX-X-X-0021-1.0')."\n".
+                         '&L'.decode('GB2312','咨询电话：0755-89323317').
+                         '&R'.decode('GB2312',$this_patient_ID_and_patient_name{$tempid}.'，第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
+            $worksheet->set_footer($footer);
 
-            # 在第一行第二列插入 公司logo (pic/荻硕贝肯logo.png)
-            $worksheet->insert_image('A1', "pic/logo.png", 10, 10, 0.73, 0.73);
+            # 在第一行第二列插入 公司logo (pic/logo.png)
+            $worksheet->insert_image('A1', "pic/logo.png", 5, 30, 0.15, 0.15);
 
             # 写入 各项信息
             ################## 报告头 部分 #########################
             $worksheet->merge_range('A1:H1', decode('GB2312','广州君瑞康生物科技有限公司'), $format1);
             $worksheet->merge_range('A2:H2', decode('GB2312',''), $format2);  # 留 空行
             $worksheet->merge_range('A3:H3', decode('GB2312',''), $format2);  # 留 空行
-            $worksheet->merge_range('A4:H4', decode('GB2312','移植后嵌合体状态分析咨询报告'), $format4);  #
-
-                #        my %this_patient_ID_and_report_id = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者本轮检测的汇总报告单的编号
-                #        my %this_patient_ID_and_patient_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者姓名
-                #        my %this_patient_ID_and_patient_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者性别
-                #        my %this_patient_ID_and_patient_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者年龄
-                #        my %this_patient_ID_and_patient_diagnosis = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者 诊断信息
-                #        my %this_patient_ID_and_patient_sampleType = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者样本类型 (外周血 / 骨髓 /骨髓血?)
-                #        my %this_patient_ID_and_patient_sampleDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者采样日期
-                #        my %this_patient_ID_and_patient_rcvDate = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 患者收样(接样)日期
-                #        my %this_patient_ID_and_donor_name = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者姓名
-                #        my %this_patient_ID_and_donor_gender = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者性别
-                #        my %this_patient_ID_and_donor_age = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者年龄
-                #        my %this_patient_ID_and_donor_relationship = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 供者与他/她的关系
-                #        my %this_patient_ID_and_hospital = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 医院全称
-                #        my %this_patient_ID_and_doctor = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 送样医生
-                # my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
-                #        my %hash_this_patient_ID_and_shuqian_patient_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前患者 的型别结果
-                #        my %hash_this_patient_ID_and_shuqian_donor_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前供者 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(外周血/骨髓血) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(T细胞) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(B细胞) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(NK细胞) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(粒细胞) 的型别结果
+            $worksheet->merge_range('A4:H4', decode('GB2312','移植后嵌合体状态分析咨询报告'), $format3);  #
 
             ################## 报告单编号 部分 #########################
-            $worksheet->merge_range('A5:H5', decode('GB2312','报告编号：'.$this_patient_ID_and_report_id{$tempid}.' '),$format3);
+            $worksheet->merge_range('A5:H5', decode('GB2312','报告编号：'.$this_patient_ID_and_report_id{$tempid}.' '),$format4);
 
             ################## 供患信息 部分 #########################
-            $worksheet->merge_range('A6:A7', decode('GB2312','姓名'), $format6);
-            $worksheet->merge_range('B6:B7', decode('GB2312',$this_patient_ID_and_patient_name{$tempid}), $format6);
-            $worksheet->write('C06',decode('GB2312','性别'),$format4);
-            $worksheet->write('D06',decode('GB2312',$this_patient_ID_and_patient_gender{$tempid}),$format4);
-            $worksheet->write('E06',decode('GB2312','年龄'),$format4);
-            $worksheet->write('F06',decode('GB2312',$this_patient_ID_and_patient_age{$tempid}),$format4);
-            $worksheet->write('G06',decode('GB2312','采样日期'),$format4);
-            $worksheet->write('H06',decode('GB2312',$this_patient_ID_and_patient_sampleDate{$tempid}),$format4);
+            $worksheet->merge_range('A6:A7', decode('GB2312','姓名'), $format5);
+            $worksheet->merge_range('B6:B7', decode('GB2312',$this_patient_ID_and_patient_name{$tempid}), $format5);
+            $worksheet->write('C06',decode('GB2312','性别'),$format5);
+            $worksheet->write('D06',decode('GB2312',$this_patient_ID_and_patient_gender{$tempid}),$format5);
+            $worksheet->write('E06',decode('GB2312','年龄'),$format5);
+            $worksheet->write('F06',decode('GB2312',$this_patient_ID_and_patient_age{$tempid}),$format5);
+            $worksheet->write('G06',decode('GB2312','采样日期'),$format5);
+            $worksheet->write('H06',decode('GB2312',$this_patient_ID_and_patient_sampleDate{$tempid}),$format5);
 
-            $worksheet->write('C07',decode('GB2312','临床描述'),$format4);
-            $worksheet->write('D07',decode('GB2312',$this_patient_ID_and_patient_diagnosis{$tempid}),$format4);
-            $worksheet->write('E07',decode('GB2312','样本类型'),$format4);
-            $worksheet->write('F07',decode('GB2312',$this_patient_ID_and_patient_sampleType{$tempid}),$format4);
-            $worksheet->write('G07',decode('GB2312','接样日期'),$format4);
-            $worksheet->write('H07',decode('GB2312',$this_patient_ID_and_patient_rcvDate{$tempid}),$format4);
+            $worksheet->write('C07',decode('GB2312','临床描述'),$format5);
+            $worksheet->write('D07',decode('GB2312',$this_patient_ID_and_patient_diagnosis{$tempid}),$format5);
+            $worksheet->write('E07',decode('GB2312','样本类型'),$format5);
+            $worksheet->write('F07',decode('GB2312',$this_patient_ID_and_patient_sampleType{$tempid}),$format5);
+            $worksheet->write('G07',decode('GB2312','接样日期'),$format5);
+            $worksheet->write('H07',decode('GB2312',$this_patient_ID_and_patient_rcvDate{$tempid}),$format5);
 
-            $worksheet->write('A8', decode('GB2312','供者姓名'), $format6);
-            $worksheet->write('B8', decode('GB2312',$this_patient_ID_and_donor_name{$tempid}), $format6);
-            $worksheet->write('C08',decode('GB2312','性别'),$format4);
-            $worksheet->write('D08',decode('GB2312',$this_patient_ID_and_donor_gender{$tempid}),$format4);
-            $worksheet->write('E08',decode('GB2312','年龄'),$format4);
-            $worksheet->write('F08',decode('GB2312',$this_patient_ID_and_donor_age{$tempid}),$format4);
-            $worksheet->write('G08',decode('GB2312','供患关系'),$format4);
-            $worksheet->write('H08',decode('GB2312',$this_patient_ID_and_donor_relationship{$tempid}),$format4);
+            $worksheet->write('A8', decode('GB2312','供者姓名'), $format5);
+            $worksheet->write('B8', decode('GB2312',$this_patient_ID_and_donor_name{$tempid}), $format5);
+            $worksheet->write('C08',decode('GB2312','性别'),$format5);
+            $worksheet->write('D08',decode('GB2312',$this_patient_ID_and_donor_gender{$tempid}),$format5);
+            $worksheet->write('E08',decode('GB2312','年龄'),$format5);
+            $worksheet->write('F08',decode('GB2312',$this_patient_ID_and_donor_age{$tempid}),$format5);
+            $worksheet->write('G08',decode('GB2312','供患关系'),$format5);
+            $worksheet->write('H08',decode('GB2312',$this_patient_ID_and_donor_relationship{$tempid}),$format5);
 
-            $worksheet->write('A09',decode('GB2312','送检单位'),$format4);
-            $worksheet->merge_range('B9:D9', decode('GB2312',$this_patient_ID_and_hospital{$tempid}), $format6);
-            $worksheet->write('E09',decode('GB2312','送检专家'),$format4);
-            $worksheet->merge_range('F9:H9', decode('GB2312',$this_patient_ID_and_doctor{$tempid}), $format6);
+            $worksheet->write('A09',decode('GB2312','送检单位'),$format5);
+            $worksheet->merge_range('B9:D9', decode('GB2312',$this_patient_ID_and_hospital{$tempid}), $format5);
+            $worksheet->write('E09',decode('GB2312','送检专家'),$format5);
+            $worksheet->merge_range('F9:H9', decode('GB2312',$this_patient_ID_and_doctor{$tempid}), $format5);
 
             ################## 检测结果 部分 #########################
-            $worksheet->merge_range('A10:H10',decode('GB2312','检测结果：'),$format4);
+            $worksheet->merge_range('A10:H10',decode('GB2312','检测结果：'),$format6);
             # 每种 样本类型的检测结果 分别输出一行
             my $hash_this_patient_conclusions = $this_patient_ID_sampleDetailType_and_conclusion{$tempid} ;
             my @this_patient_sampleDetailTypes = keys %$hash_this_patient_conclusions ;
@@ -3109,201 +3088,188 @@ sub RUN_Click{
             for my $q (0..$#this_patient_sampleDetailTypes){
                 if ($this_patient_sampleDetailTypes[$q] !~ /\-/){  # 不是分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
-                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312',$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format4);  # 写入每一类样本的结论
+                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','  '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++ ;
                 }
             }
             for my $q (0..$#this_patient_sampleDetailTypes){
                 if ($this_patient_sampleDetailTypes[$q] =~ /-T细胞/){  # T细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
-                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312',$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format4);  # 写入每一类样本的结论
+                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','  '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++ ;
                 }
             }
             for my $q (0..$#this_patient_sampleDetailTypes){  # 写 "B细胞分选结果"
                 if ($this_patient_sampleDetailTypes[$q] =~ /-B细胞/){  # B细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
-                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312',$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format4);  # 写入每一类样本的结论
+                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','  '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++ ;
                 }
             }
             for my $q (0..$#this_patient_sampleDetailTypes){  # 写 "NK细胞分选结果"
                 if ($this_patient_sampleDetailTypes[$q] =~ /-NK细胞/){  # NK细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
-                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312',$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format4);  # 写入每一类样本的结论
+                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','  '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++ ;
                 }
             }
             for my $q (0..$#this_patient_sampleDetailTypes){  # 写 "粒细胞分选结果"
                 if ($this_patient_sampleDetailTypes[$q] =~ /-粒细胞/){  # 粒细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
-                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312',$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format4);  # 写入每一类样本的结论
+                    $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','  '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++;
                 }
             }
 
-                #        my %this_patient_ID_and_shuqian_donor_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术前供者 实验编码
-                #        my %this_patient_ID_and_shuqian_patient_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术前患者 实验编码
-                #        my %this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(外周血/骨髓血) 实验编码
-                #        my %this_patient_ID_and_shuhou_patient_T_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(T细胞分选) 实验编码
-                #        my %this_patient_ID_and_shuhou_patient_B_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(B细胞分选) 实验编码
-                #        my %this_patient_ID_and_shuhou_patient_NK_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(NK细胞分选) 实验编码
-                #        my %this_patient_ID_and_shuhou_patient_li_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(粒细胞分选) 实验编码
             # 本次检测所用 样本类型 的型别汇总表
-            $worksheet->merge_range('A15:H15', decode('GB2312',''), $format6);
-            $worksheet->merge_range('A16:A19', decode('GB2312','基因座'), $format6);
-            $worksheet->write('B16', decode('GB2312','样本编号'), $format6);
-            $worksheet->write('B17', decode('GB2312',$this_patient_ID_and_shuqian_patient_expid{$tempid}), $format6);
-            $worksheet->merge_range('B18:B19', decode('GB2312',"患者移植前"), $format6);
-            $worksheet->write('C16', decode('GB2312','样本编号'), $format6);
-            $worksheet->write('C17', decode('GB2312',$this_patient_ID_and_shuqian_donor_expid{$tempid}), $format6);
-            $worksheet->merge_range('C18:C19', decode('GB2312',"供者"), $format6);
+            $worksheet->merge_range('A15:H15', decode('GB2312',''), $format2);
+            $worksheet->merge_range('A16:A19', decode('GB2312','基因座'), $format8);
+            $worksheet->write('B16', decode('GB2312','样本编号'), $format9);
+            $worksheet->write('B17', decode('GB2312',$this_patient_ID_and_shuqian_patient_expid{$tempid}), $format10);
+            $worksheet->merge_range('B18:B19', decode('GB2312',"患者移植前"), $format11);
+            $worksheet->write('C16', decode('GB2312','样本编号'), $format9);
+            $worksheet->write('C17', decode('GB2312',$this_patient_ID_and_shuqian_donor_expid{$tempid}), $format10);
+            $worksheet->merge_range('C18:C19', decode('GB2312',"供者"), $format11);
             # 判断样本类型为 外周血 or 骨髓 ？
 
             my $sample_type = $this_patient_ID_and_patient_sampleType{$tempid}  ;
-            $worksheet->write('D16', decode('GB2312','样本编号'), $format6);
-            $worksheet->write('D17', decode('GB2312',$this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid}), $format6);
-            $worksheet->write('D18', decode('GB2312','患者移植后'), $format6);
+            $worksheet->write('D16', decode('GB2312','样本编号'), $format9);
+            $worksheet->write('D17', decode('GB2312',$this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid}), $format10);
+            $worksheet->write('D18', decode('GB2312','患者移植后'), $format12);
             if ($sample_type eq "外周血" || $sample_type eq "全血"){
-                $worksheet->write('D19', decode('GB2312','(外周血)'), $format6);
+                $worksheet->write('D19', decode('GB2312','(外周血)'), $format13);
             } elsif ($sample_type eq "骨髓" || $sample_type eq "骨髓血" ){
-                $worksheet->write('D19', decode('GB2312','(骨髓血)'), $format6);
+                $worksheet->write('D19', decode('GB2312','(骨髓血)'), $format13);
             } else {
-                $worksheet->write('D19', decode('GB2312','(其他)'), $format6);
+                $worksheet->write('D19', decode('GB2312','(其他)'), $format13);
             }
 
             # 术后患者 T细胞
-            $worksheet->write('E16', decode('GB2312','样本编号'), $format6);
-            $worksheet->write('E17', decode('GB2312', $this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid}), $format6);
-            $worksheet->write('E18', decode('GB2312','患者移植后'), $format6);
-            $worksheet->write('E19', decode('GB2312','(T细胞)'), $format6);
+            $worksheet->write('E16', decode('GB2312','样本编号'), $format9);
+            $worksheet->write('E17', decode('GB2312', $this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid}), $format10);
+            $worksheet->write('E18', decode('GB2312','患者移植后'), $format12);
+            $worksheet->write('E19', decode('GB2312','(T细胞)'), $format13);
             # 术后患者 B细胞
-            $worksheet->write('F16', decode('GB2312','样本编号'), $format6);
-            $worksheet->write('F17', decode('GB2312',$this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid}), $format6);
-            $worksheet->write('F18', decode('GB2312','患者移植后'), $format6);
-            $worksheet->write('F19', decode('GB2312','(B细胞)'), $format6);
+            $worksheet->write('F16', decode('GB2312','样本编号'), $format9);
+            $worksheet->write('F17', decode('GB2312',$this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid}), $format10);
+            $worksheet->write('F18', decode('GB2312','患者移植后'), $format12);
+            $worksheet->write('F19', decode('GB2312','(B细胞)'), $format13);
             # 术后患者 NK细胞
-            $worksheet->write('G16', decode('GB2312','样本编号'), $format6);
-            $worksheet->write('G17', decode('GB2312',$this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid}), $format6);
-            $worksheet->write('G18', decode('GB2312','患者移植后'), $format6);
-            $worksheet->write('G19', decode('GB2312','(NK细胞)'), $format6);
+            $worksheet->write('G16', decode('GB2312','样本编号'), $format9);
+            $worksheet->write('G17', decode('GB2312',$this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid}), $format10);
+            $worksheet->write('G18', decode('GB2312','患者移植后'), $format12);
+            $worksheet->write('G19', decode('GB2312','(NK细胞)'), $format13);
             # 术后患者 粒细胞
-            $worksheet->write('H16', decode('GB2312','样本编号'), $format6);
-            $worksheet->write('H17', decode('GB2312', $this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid}), $format6);
-            $worksheet->write('H18', decode('GB2312','患者移植后'), $format6);
-            $worksheet->write('H19', decode('GB2312','(粒细胞)'), $format6);
+            $worksheet->write('H16', decode('GB2312','样本编号'), $format9);
+            $worksheet->write('H17', decode('GB2312', $this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid}), $format10);
+            $worksheet->write('H18', decode('GB2312','患者移植后'), $format12);
+            $worksheet->write('H19', decode('GB2312','(粒细胞)'), $format13);
 
             # 在第一列 遍历写入25个marker名字
             for my $q (0..$#markers_jrk){
                 if ($markers_jrk[$q] =~ /vWA/){$markers_jrk[$q] =~ s/vWA/VWA/;}  # 将marker "vWA" 替换为 "VMA"
                 if ($markers_jrk[$q] =~ /AMEL/){$markers_jrk[$q] =~ s/AMEL/Amel/;}  # 将marker "AMEL" 替换为 "Amel"
-                $worksheet->write($q+19,0,$markers_jrk[$q], $format6);  # 写入 marker 名
+                $worksheet->write($q+19,0,$markers_jrk[$q], $format14);  # 写入 marker 名
 
             }
             # 遍历写入 "术前患者" "术前供者" "术后外周血/术后骨髓" "术后T细胞" "术后B细胞" "术后NK细胞" "术后粒细胞" 的型别信息
-                #        my %hash_this_patient_ID_and_shuqian_patient_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前患者 的型别结果
-                #        my %hash_this_patient_ID_and_shuqian_donor_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前供者 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(外周血/骨髓血) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(T细胞) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(B细胞) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(NK细胞) 的型别结果
-                #        my %hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(粒细胞) 的型别结果
             for my $q (0..$#markers_jrk){
-                $worksheet->write($q+19,0,$markers_jrk[$q], $format6);  # 写入 marker 名
+                # $worksheet->write($q+19,0,$markers_jrk[$q], $format6);  # 写入 marker 名
                 # 写入 术前患者 的型别
                 if (%hash_this_patient_ID_and_shuqian_patient_genotypes){
-                    $worksheet->write($q+19,1,decode('GB2312',$hash_this_patient_ID_and_shuqian_patient_genotypes{$tempid}->{$markers_jrk[$q]}), $format6);
+                    $worksheet->write($q+19,1,decode('GB2312',$hash_this_patient_ID_and_shuqian_patient_genotypes{$tempid}->{$markers_jrk[$q]}), $format15);
                     print "L3213:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuqian_patient_genotypes{$tempid}->{$markers_jrk[$q]}\n" ;
                 } else {
-                    $worksheet->write($q+19,1,decode('GB2312',''), $format6);
+                    $worksheet->write($q+19,1,decode('GB2312',''), $format15);
                     print "L3216:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuqian_patient_genotypes{\$tempid}->{\$markers_jrk[\$q]} not exists.\n" ;
                     print "L3217: Error! Please check!\n" ;
                 }
 
                 # 写入 术前供者 的型别
                 if (%hash_this_patient_ID_and_shuqian_donor_genotypes){
-                    $worksheet->write($q+19,2,decode('GB2312',$hash_this_patient_ID_and_shuqian_donor_genotypes{$tempid}->{$markers_jrk[$q]}), $format6);
+                    $worksheet->write($q+19,2,decode('GB2312',$hash_this_patient_ID_and_shuqian_donor_genotypes{$tempid}->{$markers_jrk[$q]}), $format15);
                     print "L3222:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuqian_donor_genotypes{$tempid}->{$markers_jrk[$q]}\n" ;
                 } else {
-                    $worksheet->write($q+19,2,decode('GB2312',''), $format6);
+                    $worksheet->write($q+19,2,decode('GB2312',''), $format15);
                     print "L3224:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuqian_donor_genotypes{\$tempid}->{\$markers_jrk[\$q]} not exists.\n" ;
                     print "L3217: Error! Please check!\n" ;
                 }
 
                 # 写入 术后外周血/骨髓血 的型别
                 if (%hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes){
-                    $worksheet->write($q+19,3,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes{$tempid}->{$markers_jrk[$q]}), $format6);
+                    $worksheet->write($q+19,3,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes{$tempid}->{$markers_jrk[$q]}), $format15);
                     print "L3222:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes{$tempid}->{$markers_jrk[$q]}\n" ;
                 } else {
-                    $worksheet->write($q+19,3,decode('GB2312',''), $format6);
+                    $worksheet->write($q+19,3,decode('GB2312',''), $format15);
                     print "L3224:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes{\$tempid}->{\$markers_jrk[\$q]} not exists.\n" ;
                 }
 
                  # 写入 术后T细胞 的型别
                 if (%hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes){
-                    $worksheet->write($q+19,4,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format6);
+                    $worksheet->write($q+19,4,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format15);
                     print "L3240:$q|markers_jrk[$q]|,$hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes{$tempid}->{$markers_jrk[$q]}\n" ;
                 } else {
-                    $worksheet->write($q+19,4,decode('GB2312',''), $format6);
+                    $worksheet->write($q+19,4,decode('GB2312',''), $format15);
                     print "L3242:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes{\$tempid}->{\$markers_jrk[\$q]} not exists.\n" ;
                 }
 
                  # 写入 术后B细胞 的型别
                 if (%hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes){
-                    $worksheet->write($q+19,5,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format6);
+                    $worksheet->write($q+19,5,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format15);
                     print "L3248:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes{$tempid}->{$markers_jrk[$q]}\n" ;
                 } else {
-                    $worksheet->write($q+19,5,decode('GB2312',''), $format6);
+                    $worksheet->write($q+19,5,decode('GB2312',''), $format15);
                     print "L3250:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes{\$tempid}->{\$markers_jrk[\$q]} not exists.\n" ;
                 }
 
                  # 写入 术后NK细胞 的型别
                 if (%hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes){
-                    $worksheet->write($q+19,6,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format6);
+                    $worksheet->write($q+19,6,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format15);
                     print "L3256:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes{$tempid}->{$markers_jrk[$q]}\n" ;
                 } else {
-                    $worksheet->write($q+19,6,decode('GB2312',''), $format6);
+                    $worksheet->write($q+19,6,decode('GB2312',''), $format15);
                     print "L3258:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes{\$tempid}->{\$markers_jrk[\$q]} not exists.\n" ;
                 }
 
                  # 写入 术后粒细胞 的型别
                 if (%hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes){
-                    $worksheet->write($q+19,7,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format6);
+                    $worksheet->write($q+19,7,decode('GB2312',$hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes{$tempid}->{$markers_jrk[$q]}), $format15);
                     print "L3264:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes{$tempid}->{$markers_jrk[$q]}\n" ;
                 } else {
-                    $worksheet->write($q+19,7,decode('GB2312',''), $format6);
+                    $worksheet->write($q+19,7,decode('GB2312',''), $format15);
                     print "L3266:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes{\$tempid}->{\$markers_jrk[\$q]} not exists.\n" ;
                 }
 
             }
 
             # 检测者 + 复核者 + 报告日期 + 报告盖章
-            $worksheet->write('A45', decode('GB2312','检测者：'), $format6);
-            $worksheet->write('B45', decode('GB2312',''), $format6);
-            $worksheet->write('D45', decode('GB2312','复核者：'), $format6);
-            $worksheet->write('E45', decode('GB2312',''), $format6);
-            $worksheet->write('G45', decode('GB2312','报告日期：'), $format6);
-            $worksheet->write('H45', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format9);
+
+            $worksheet->write('A45', decode('GB2312','检测者：'), $format16);
+            $worksheet->write('B45', decode('GB2312',''), $format16);
+            $worksheet->write('D45', decode('GB2312','复核者：'), $format16);
+            $worksheet->write('E45', decode('GB2312',''), $format16);
+            $worksheet->write('G45', decode('GB2312','报告日期：'), $format16);
+            $worksheet->write('H45', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format16);
             # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
             if (-e "pic/检测者.png"){
-                 $worksheet->insert_image('B45', "pic/检测者.png", 5, 0, 1, 1);
+                 $worksheet->insert_image('B45', "pic/检测者.png", 5, 20, 1.5, 1.5);
             }
             if (-e "pic/复核者.png"){
-                 $worksheet->insert_image('E45', "pic/复核者.png", 20, 0, 1, 1);
+                 $worksheet->insert_image('E45', "pic/复核者.png", 5, 20, 1, 1);
             }
             if (-e "pic/盖章.png"){
-                 $worksheet->insert_image('H45', "pic/盖章.png", 10, 12, 1, 1);
+                 $worksheet->insert_image('G45', "pic/盖章.png", 10, 20, 1, 1);
             }
 
             ################## 备注 部分 #########################
-            $worksheet->merge_range('A46:A52', decode('GB2312','备注：'), $format6);
-            $worksheet->merge_range('B46:H46', decode('GB2312','1.本检测采用STR-PCR和毛细管电泳片段分析方法。'), $format6);
-            $worksheet->merge_range('B47:H47', decode('GB2312','2.本报告仅对本次检验的样本负责，结果仅供临床医生参考。'), $format6);
-            $worksheet->merge_range('B48:H48', decode('GB2312','3.样本保存有一定期限，若对报告结果有疑义，请在自报告日期起7天内提出复检申请，逾期不再受理。'), $format6);
-            $worksheet->merge_range('B49:H52', decode('GB2312','4.嵌合状态界定[1]
-                完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
-                [1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow
-                transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.'), $format6);
+            $worksheet->merge_range('A46:A52', decode('GB2312','备注：'), $format17);
+            $worksheet->merge_range('B46:H46', decode('GB2312','1.本检测采用STR-PCR和毛细管电泳片段分析方法。'), $format18);
+            $worksheet->merge_range('B47:H47', decode('GB2312','2.本报告仅对本次检验的样本负责，结果仅供临床医生参考。'), $format19);
+            $worksheet->merge_range('B48:H48', decode('GB2312','3.样本保存有一定期限，若对报告结果有疑义，请在自报告日期起7天内提出复检申请，逾期不再受理。'), $format19);
+            $worksheet->merge_range('B49:H52', decode('GB2312','4.嵌合状态界定[1]:
+   完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
+   [1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow
+   transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.'), $format20);
 
             ########################################### 输出 "报告" 表单 完成 ###################################################################
             ##################################################################################################################################
@@ -3536,8 +3502,9 @@ sub RUN_Click{
                     # "嵌合曲线" 图表下面 提示信息 部分的内容
                     # 写入 "TCA定期检测流程 .... 等说明性 内容"
                     $graphic->write(@date_seq+29,0, decode('GB2312','嵌合体定期检测建议：'), $Gfmt5);
-                    $graphic->write(@date_seq+30,0, decode('GB2312','    1、术后2周进行首次嵌合体检测，第4周进行第二次检测；术后6个月内，每月进行一次检测，6个月后，每2个月检测一次，直至嵌合率稳定。'), $Gfmt6);
-                    $graphic->write(@date_seq+31,0, decode('GB2312','    2、若术后免疫治疗方案调整，在调整后2周重新进行检测，频率参照以上建议。'),$Gfmt6);
+                    $graphic->write(@date_seq+30,0, decode('GB2312','    1、术后2周进行首次嵌合体检测，第4周进行第二次检测；术后6个月内，每月进行一次检测，'), $Gfmt6);
+                    $graphic->write(@date_seq+31,0, decode('GB2312','       6个月后，每2个月检测一次，直至嵌合率稳定。'), $Gfmt6);
+                    $graphic->write(@date_seq+32,0, decode('GB2312','    2、若术后免疫治疗方案调整，在调整后2周重新进行检测，频率参照以上建议。'),$Gfmt6);
                     # $graphic->merge_range('B30:G30', decode('GB2312','温馨提示：一旦术后免疫治疗方案调整，在调整后2周需要重新启动检测'), $Gfmt7);
             }else{
 
