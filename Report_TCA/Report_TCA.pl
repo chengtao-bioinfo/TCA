@@ -3368,8 +3368,12 @@ sub RUN_Click{
                     $graphic->set_margin_right(0.3);
                     $graphic->set_margin_top(0.2);
 
-                    # 设置 页脚
-                    # $graphic->set_footer($footer);  # $footer: L2418 - L2421
+                    # 设置表单的 页脚
+                    my $footer = '&L'.decode('GB2312','检验实验室：广州君瑞康医学检验实验室')."\n".
+                                 #'&R'.decode('GB2312','XXXX-X-X-0021-1.0')."\n".
+                                 '&L'.decode('GB2312','咨询电话：0755-89323317').
+                                 '&R'.decode('GB2312',$this_patient_ID_and_patient_name{$tempid}.'(附录)，第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
+                    $worksheet->set_footer($footer);
 
                     # B1 插入 logo
                     # 在第一行第二列插入 公司logo (pic/logo.png)
