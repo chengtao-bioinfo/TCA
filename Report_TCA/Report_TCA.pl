@@ -1617,10 +1617,17 @@ sub RUN_Click{
         my %this_patient_ID_and_shuqian_donor_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术前供者 实验编码
         my %this_patient_ID_and_shuqian_patient_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术前患者 实验编码
         my %this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(外周血/骨髓血) 实验编码
-        my %this_patient_ID_and_shuhou_patient_T_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(T细胞分选) 实验编码
-        my %this_patient_ID_and_shuhou_patient_B_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(B细胞分选) 实验编码
-        my %this_patient_ID_and_shuhou_patient_NK_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(NK细胞分选) 实验编码
-        my %this_patient_ID_and_shuhou_patient_li_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(粒细胞分选) 实验编码
+        my %this_patient_ID_and_shuhou_patient_T_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对应的 术后患者(T细胞分选) 实验编码
+        my %this_patient_ID_and_shuhou_patient_B_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对应的 术后患者(B细胞分选) 实验编码
+        my %this_patient_ID_and_shuhou_patient_NK_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对应的 术后患者(NK细胞分选) 实验编码
+        my %this_patient_ID_and_shuhou_patient_li_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对应的 术后患者(粒细胞分选) 实验编码
+        my $hash_this_patient_ID_and_shuqian_patient_genotypes = () ;  # 定义一个hash表，用于存储 患者编码 对应的 术前患者 的 每个marker名 对应的 型别结果
+        my $hash_this_patient_ID_and_shuqian_donor_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前供者 的 每个marker名 对应的 型别结果
+        my $hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(外周血/骨髓血)  的 每个marker名 对应的 型别结果
+        my $hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(T细胞) 的 每个marker名 对应的 型别结果
+        my $hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(B细胞) 的 每个marker名 对应的 型别结果
+        my $hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(NK细胞) 的 每个marker名 对应的 型别结果
+        my $hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(粒细胞) 的 每个marker名 对应的 型别结果
 
         %allele = ();
 
@@ -2501,6 +2508,13 @@ sub RUN_Click{
                 #        my %this_patient_ID_and_shuhou_patient_B_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(B细胞分选) 实验编码
                 #        my %this_patient_ID_and_shuhou_patient_NK_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(NK细胞分选) 实验编码
                 #        my %this_patient_ID_and_shuhou_patient_li_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(粒细胞分选) 实验编码
+                #        my $hash_this_patient_ID_and_shuqian_patient_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前患者 的型别结果
+                #        my $hash_this_patient_ID_and_shuqian_donor_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前供者 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(外周血/骨髓血) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(T细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(B细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(NK细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(粒细胞) 的型别结果
                 my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
                 print "L2485:$z|$TCAID|$tempid\n" ;
                 if(!exists $this_patient_ID_and_report_id{$tempid}){
@@ -2599,31 +2613,43 @@ sub RUN_Click{
                     print "L2582:$tempid|shuqian_donor_expid|$num2[$z]\n" ;
                 }
 
-
                 # 每种 样本类型的检测结果 分别输出一行
+                $hash_this_patient_ID_and_shuqian_patient_genotypes = $allele{$num1[$z]} ;  # 获取 术前患者 的型别结果 : marker => genotype
+                $hash_this_patient_ID_and_shuqian_donor_genotypes = $allele{$num2[$z]} ;  # 获取 术前患者 的型别结果 : marker => genotype
                 if ($patient_sampleDetailType !~ /\-/) {  # 外周血 / 骨髓血
                     if (!exists $this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid} = $num3[$z] ;
                     }
+
+                    $hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes = $allele{$num3[$z]}  ; # 获取 术后患者 外周血/骨髓血 样本的型别结果 : marker => genotype
                 } elsif ($patient_sampleDetailType =~ /\-T细胞/) {  # T细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid} = $num3[$z] ;
                     }
+
+                    $hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes = $allele{$num3[$z]}  ; # 获取 术后患者 T细胞 样本的型别结果 : marker => genotype
                 } elsif ($patient_sampleDetailType =~ /\-B细胞/) {  # B细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid} = $num3[$z] ;
                     }
+
+                    $hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = $allele{$num3[$z]}  ; # 获取 术后患者 B细胞 样本的型别结果 : marker => genotype
                 } elsif ($patient_sampleDetailType =~ /\-NK细胞/) {  # NK细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid} = $num3[$z] ;
                     }
+
+                    $hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = $allele{$num3[$z]}  ; # 获取 术后患者 NK细胞 样本的型别结果 : marker => genotype
                 } elsif ($patient_sampleDetailType =~ /\-粒细胞/) {  # 粒细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid} = $num3[$z] ;
                     }
+
+                    $hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = $allele{$num3[$z]}  ; # 获取 术后患者 粒细胞 样本的型别结果 : marker => genotype
                 } else {
                     print "L2618: 错误的 patient_sampleDetailType:$patient_sampleDetailType \n请检查!" ;
                 }
+
 
                 # 写入 "备注" 表头
                 $worksheet->write('B35',decode('GB2312','备    注'),$format15);
@@ -2955,7 +2981,7 @@ sub RUN_Click{
             $worksheet->set_column(4,5,10);
             $worksheet->set_column(6,7,10);
             # $worksheet->set_column(8,8,10);
-            my @rows = (73,8,3,18.4,14,14,14,14,14,14,14,14,14,14,14,40,40,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,18.4,10,10,10,10);
+            my @rows = (73,8,3,18.4,14,14,14,14,14,14,14,14,14,14,14,20,20,20,20,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,18.4,10,10,10,10);
             for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
 
             # 设置页面的左右及上边距
@@ -3029,6 +3055,13 @@ sub RUN_Click{
                 #        my %this_patient_ID_and_hospital = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 医院全称
                 #        my %this_patient_ID_and_doctor = () ;  # 定义一个hash表，用于存储 患者编码 (如:HUN001胡琳) 对应的 送样医生
                 # my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                #        my $hash_this_patient_ID_and_shuqian_patient_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前患者 的型别结果
+                #        my $hash_this_patient_ID_and_shuqian_donor_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前供者 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(外周血/骨髓血) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(T细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(B细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(NK细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(粒细胞) 的型别结果
 
             ################## 报告单编号 部分 #########################
             $worksheet->merge_range('G5:H5', decode('GB2312','报告编号：'.$this_patient_ID_and_report_id{$tempid}.' '),$format3);
@@ -3117,77 +3150,136 @@ sub RUN_Click{
                 #        my %this_patient_ID_and_shuhou_patient_li_cell_expid = () ;  # 定义一个hash表，用于存储 患者编码 对用的 术后患者(粒细胞分选) 实验编码
             # 本次检测所用 样本类型 的型别汇总表
             $worksheet->merge_range('A15:H15', decode('GB2312',''), $format6);
-            $worksheet->merge_range('A16:A17', decode('GB2312','基因座'), $format6);
-            $worksheet->write('B16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuqian_patient_expid{$tempid}), $format6);
-            $worksheet->write('B17', decode('GB2312',"患者移植前"), $format6);
-            $worksheet->write('C16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuqian_donor_expid{$tempid}), $format6);
-            $worksheet->write('C17', decode('GB2312',"供者"), $format6);
+            $worksheet->merge_range('A16:A19', decode('GB2312','基因座'), $format6);
+            $worksheet->write('B16', decode('GB2312','样本编号'), $format6);
+            $worksheet->write('B17', decode('GB2312',$this_patient_ID_and_shuqian_patient_expid{$tempid}), $format6);
+            $worksheet->merge_range('B18:B19', decode('GB2312',"患者移植前"), $format6);
+            $worksheet->write('C16', decode('GB2312','样本编号'), $format6);
+            $worksheet->write('C17', decode('GB2312',$this_patient_ID_and_shuqian_donor_expid{$tempid}), $format6);
+            $worksheet->merge_range('C18:C19', decode('GB2312',"供者"), $format6);
             # 判断样本类型为 外周血 or 骨髓 ？
 
             my $sample_type = $this_patient_ID_and_patient_sampleType{$tempid}  ;
+            $worksheet->write('D16', decode('GB2312','样本编号'), $format6);
+            $worksheet->write('D17', decode('GB2312',$this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid}), $format6);
+            $worksheet->write('D18', decode('GB2312','患者移植后'), $format6);
             if ($sample_type eq "外周血" || $sample_type eq "全血"){
-                $worksheet->write('D16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid}), $format6);
-                $worksheet->write('D17', decode('GB2312','患者移植后
-(外周血)'), $format6);
+                $worksheet->write('D19', decode('GB2312','(外周血)'), $format6);
             } elsif ($sample_type eq "骨髓" || $sample_type eq "骨髓血" ){
-                $worksheet->write('D16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid}), $format6);
-                $worksheet->write('D17', decode('GB2312','患者移植后
-(骨髓血)'), $format6);
+                $worksheet->write('D19', decode('GB2312','(骨髓血)'), $format6);
             } else {
-                $worksheet->write('D16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_expid{$tempid}), $format6);
-                $worksheet->write('D17', decode('GB2312','患者移植后
-(其他)'), $format6);
+                $worksheet->write('D19', decode('GB2312','(其他)'), $format6);
             }
 
             # 术后患者 T细胞
-            $worksheet->write('E16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid}), $format6);
-            $worksheet->write('E17', decode('GB2312','患者移植后
-(T细胞)'), $format6);
-
+            $worksheet->write('E16', decode('GB2312','样本编号'), $format6);
+            $worksheet->write('E17', decode('GB2312', $this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid}), $format6);
+            $worksheet->write('E18', decode('GB2312','患者移植后'), $format6);
+            $worksheet->write('E19', decode('GB2312','(T细胞)'), $format6);
             # 术后患者 B细胞
-            $worksheet->write('F16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid}), $format6);
-            $worksheet->write('F17', decode('GB2312','患者移植后
-(B细胞)'), $format6);
-
+            $worksheet->write('F16', decode('GB2312','样本编号'), $format6);
+            $worksheet->write('F17', decode('GB2312',$this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid}), $format6);
+            $worksheet->write('F18', decode('GB2312','患者移植后'), $format6);
+            $worksheet->write('F19', decode('GB2312','(B细胞)'), $format6);
             # 术后患者 NK细胞
-            $worksheet->write('G16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid}), $format6);
-            $worksheet->write('G17', decode('GB2312','患者移植后
-(NK细胞)'), $format6);
-
+            $worksheet->write('G16', decode('GB2312','样本编号'), $format6);
+            $worksheet->write('G17', decode('GB2312',$this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid}), $format6);
+            $worksheet->write('G18', decode('GB2312','患者移植后'), $format6);
+            $worksheet->write('G19', decode('GB2312','(NK细胞)'), $format6);
             # 术后患者 粒细胞
-            $worksheet->write('H16', decode('GB2312','样本编号'.
-$this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid}), $format6);
-            $worksheet->write('H17', decode('GB2312','患者移植后
-(粒细胞)'), $format6);
+            $worksheet->write('H16', decode('GB2312','样本编号'), $format6);
+            $worksheet->write('H17', decode('GB2312', $this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid}), $format6);
+            $worksheet->write('H18', decode('GB2312','患者移植后'), $format6);
+            $worksheet->write('H19', decode('GB2312','(粒细胞)'), $format6);
 
             # 在第一列 遍历写入25个marker名字
             for my $q (0..$#markers_jrk){
-                $worksheet->write($q+17,0,$markers_jrk[$q], $format6);  # 写入 marker 名
+                $worksheet->write($q+19,0,$markers_jrk[$q], $format6);  # 写入 marker 名
+
             }
             # 遍历写入 "术前患者" "术前供者" "术后外周血/术后骨髓" "术后T细胞" "术后B细胞" "术后NK细胞" "术后粒细胞" 的型别信息
-            # To-do
+                #        my $hash_this_patient_ID_and_shuqian_patient_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前患者 的型别结果
+                #        my $hash_this_patient_ID_and_shuqian_donor_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术前供者 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(外周血/骨髓血) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(T细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(B细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(NK细胞) 的型别结果
+                #        my $hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(粒细胞) 的型别结果
+            for my $q (0..$#markers_jrk){
+                $worksheet->write($q+19,0,$markers_jrk[$q], $format6);  # 写入 marker 名
+                # 写入 术前患者 的型别
+                if ($hash_this_patient_ID_and_shuqian_patient_genotypes){
+                    $worksheet->write($q+19,1,$hash_this_patient_ID_and_shuqian_patient_genotypes->{$markers_jrk[$q]}, $format6);
+                    print "L3213:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuqian_patient_genotypes->{$markers_jrk[$q]}\n" ;
+                } else {
+                    print "L3216:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuqian_patient_genotypes->{\$markers_jrk[\$q]} not exists.\n" ;
+                    print "L3217: Error! Please check!\n" ;
+                }
+
+                # 写入 术前供者 的型别
+                if ($hash_this_patient_ID_and_shuqian_donor_genotypes){
+                    $worksheet->write($q+19,2,$hash_this_patient_ID_and_shuqian_donor_genotypes->{$markers_jrk[$q]}, $format6);
+                    print "L3222:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuqian_donor_genotypes->{$markers_jrk[$q]}\n" ;
+                } else {
+                    print "L3224:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuqian_donor_genotypes->{\$markers_jrk[\$q]} not exists.\n" ;
+                    print "L3217: Error! Please check!\n" ;
+                }
+
+                # 写入 术后外周血/骨髓血 的型别
+                if ($hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes){
+                    $worksheet->write($q+19,3,$hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes->{$markers_jrk[$q]}, $format6);
+                    print "L3222:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes->{$markers_jrk[$q]}\n" ;
+                } else {
+                    print "L3224:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes->{\$markers_jrk[\$q]} not exists.\n" ;
+                }
+
+                 # 写入 术后T细胞 的型别
+                if ($hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes){
+                    $worksheet->write($q+19,4,$hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes->{$markers_jrk[$q]}, $format6);
+                    print "L3240:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes->{$markers_jrk[$q]}\n" ;
+                } else {
+                    print "L3242:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes->{\$markers_jrk[\$q]} not exists.\n" ;
+                }
+
+                 # 写入 术后B细胞 的型别
+                if ($hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes){
+                    $worksheet->write($q+19,5,$hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes->{$markers_jrk[$q]}, $format6);
+                    print "L3248:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes->{$markers_jrk[$q]}\n" ;
+                } else {
+                    print "L3250:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes->{\$markers_jrk[\$q]} not exists.\n" ;
+                }
+
+                 # 写入 术后NK细胞 的型别
+                if ($hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes){
+                    $worksheet->write($q+19,6,$hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes->{$markers_jrk[$q]}, $format6);
+                    print "L3256:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes->{$markers_jrk[$q]}\n" ;
+                } else {
+                    print "L3258:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes->{\$markers_jrk[\$q]} not exists.\n" ;
+                }
+
+                 # 写入 术后粒细胞 的型别
+                if ($hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes){
+                    $worksheet->write($q+19,6,$hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes->{$markers_jrk[$q]}, $format6);
+                    print "L3264:$q|markers_jrk[$q]|$hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes->{$markers_jrk[$q]}\n" ;
+                } else {
+                    print "L3266:$q|markers_jrk[$q]|\$hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes->{\$markers_jrk[\$q]} not exists.\n" ;
+                }
+
+            }
 
             # 检测者 + 复核者 + 报告日期 + 报告盖章
-            $worksheet->write('A43', decode('GB2312','检测者：'), $format6);
-            $worksheet->write('B43', decode('GB2312','XXX'), $format6);
-            $worksheet->write('D43', decode('GB2312','复核者：'), $format6);
-            $worksheet->write('E43', decode('GB2312','XXX'), $format6);
-            $worksheet->write('G43', decode('GB2312','报告日期：'), $format6);
-            $worksheet->write('H43', decode('GB2312','XXXX'), $format6);
+            $worksheet->write('A45', decode('GB2312','检测者：'), $format6);
+            $worksheet->write('B45', decode('GB2312','XXX'), $format6);
+            $worksheet->write('D45', decode('GB2312','复核者：'), $format6);
+            $worksheet->write('E45', decode('GB2312','XXX'), $format6);
+            $worksheet->write('G45', decode('GB2312','报告日期：'), $format6);
+            $worksheet->write('H45', decode('GB2312','XXXX'), $format6);
 
             ################## 备注 部分 #########################
-            $worksheet->write('A44', decode('GB2312','备注：'), $format6);
-            $worksheet->write('A45', decode('GB2312','1.本检测采用STR-PCR和毛细管电泳片段分析方法。'), $format6);
-            $worksheet->write('A46', decode('GB2312','2.本报告仅对本次检验的样本负责，结果仅供临床医生参考。'), $format6);
-            $worksheet->write('A47', decode('GB2312','3.样本保存有一定期限，若对报告结果有疑义，请在自报告日期起7天内提出复检申请，逾期不再受理。'), $format6);
+            $worksheet->write('A46', decode('GB2312','备注：'), $format6);
+            $worksheet->write('A47', decode('GB2312','1.本检测采用STR-PCR和毛细管电泳片段分析方法。'), $format6);
+            $worksheet->write('A48', decode('GB2312','2.本报告仅对本次检验的样本负责，结果仅供临床医生参考。'), $format6);
+            $worksheet->write('A49', decode('GB2312','3.样本保存有一定期限，若对报告结果有疑义，请在自报告日期起7天内提出复检申请，逾期不再受理。'), $format6);
 
             # excel 文件写完，关闭文件
             $workbook->close();
