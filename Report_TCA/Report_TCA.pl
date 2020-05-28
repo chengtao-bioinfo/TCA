@@ -3248,7 +3248,7 @@ sub RUN_Click{
                  $worksheet->insert_image('E45', "pic/¸´ºËÕß.png", 0, 8, 1.4, 1.4);
             }
             if (-e "pic/¸ÇÕÂ.png"){
-                 $worksheet->insert_image('G45', "pic/¸ÇÕÂ.png", 8, -30, 0.8, 0.8);
+                 $worksheet->insert_image('G45', "pic/¸ÇÕÂ.png", 33, -35, 0.8, 0.8);
             }
 
             ################## ±¸×¢ ²¿·Ö #########################
