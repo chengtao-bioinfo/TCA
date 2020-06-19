@@ -83,10 +83,11 @@ my %area;  # ´æ·Å ÏÂ»úÊı¾İ ÖĞ¸Ã ÊµÑé±àÂë ¸Ãmarker ¶ÔÓ¦µÄ areaĞÅÏ¢
 my %trans; # ÓÃÀ´±£´æ ÏÂ»úÊı¾İ ÖĞ¸Ã ÊµÑé±àÂë ËõĞ´ µ½ È«³Æ µÄ×ª»»
 
 # ¶¨ÒåSTR¼ì²âµÄÎ»µã±àºÅ
-my @markers = ('D8S1179','D21S11','D7S820','CSF1PO','D3S1358','D5S818','D13S317','D16S539','D2S1338','D19S433','VWA','D12S391','D18S51','Amel','D6S1043','FGA');
+# my @markers = ('D8S1179','D21S11','D7S820','CSF1PO','D3S1358','D5S818','D13S317','D16S539','D2S1338','D19S433','VWA','D12S391','D18S51','Amel','D6S1043','FGA');  # 16 markers from DSBK
+# ÔİÊ±Ê¹ÓÃ 16 marker ½øĞĞ²âÊÔ
 my @markers_jrk = ('D3S1358','VWA','D16S539','CSF1PO','TPOX','Yindel','Amel','D8S1179','D21S11','D18S51','Penta E','D2S441','D19S433','TH01','FGA','D22S1045','D5S818','D13S317','D7S820','D6S1043','D10S1248','D1S1656','D12S391','D2S1338','Penta D');
 my %markerExist;  # Ê¹ÓÃhash±í ´æ·Å markerÃû£¬ ÒÔ·½±ã·½±ã¼ì²é markerÊÇ·ñ´æÔÚ
-foreach (@markers){
+foreach (@markers_jrk){
         $markerExist{$_} = 'yes',
 }
 
@@ -528,9 +529,9 @@ $Input1 -> Add(@InputList);  # ½«@InputListÖĞ´æ´¢µÄ½Ø¶ÏÎÄ¼şÃûÏÔÊ¾µ½ "¹©»¼ĞÅÏ¢" ²
 # 0	1Marker1	2Marker2	3Marker3	4Marker4	5Marker5	6Marker6	7Marker7	8Marker8	9Marker9	10Marker10	11Marker11	12Marker12	13Marker13	14Marker14	15Marker15	16Marker16 ... 25Marker25
 # Ê¾ÀıÈçÏÂ£º
 # 	D8S1179	D21S11	D7S820	CSF1PO	D3S1358	D5S818	D13S317	D16S539	D2S1338	D19S433	VWA	D12S391	D18S51	Amel	D6S1043	FGA
-# DT2000011	13¡¢16	29¡¢32.2	8¡¢11	11	16	10	11	12			14¡¢19		13¡¢14	X		21¡¢23
-# DT2000012	10¡¢13	30	11	10¡¢12	15¡¢17	11	10¡¢11	12			17¡¢18		16	X¡¢Y		22¡¢25
-# DT2000007	11¡¢15	30¡¢32.2	11¡¢12	11¡¢12	15¡¢17	7¡¢10	8	11¡¢13			17¡¢19		15¡¢16	X¡¢Y		21¡¢24
+# DT2000011	13,16	29,32.2	8,11	11	16	10	11	12			14,19		13,14	X		21,23
+# DT2000012	10,13	30	11	10,12	15,17	11	10,11	12			17,18		16	X,Y		22,25
+# DT2000007	11,15	30,32.2	11,12	11,12	15,17	7,10	8	11,13			17,19		15,16	X,Y		21,24
 # ÌØ±ğËµÃ÷£º 1)´ø±íÍ·; 2)×Ö¶Î¼äÒÔTAB·Ö¸ô; 3) ÎÄ¼şÀ©Õ¹ÃûĞèÒª ".txt" #################################################################################################################################################################################################
 #Looking for Previous Results files
 $temp = $ConfigHash{SummaryLoc}; print "L505:" . $temp . "\n";  # ¶ÁÈ¡ÒÑÓĞÊı¾İĞÅÏ¢´æ·ÅÂ·¾¶£¬À´Ô´Îª TCAconfig.ini, SummaryLoc
@@ -549,10 +550,11 @@ foreach (@filelist){
 
         my $yes = 1;
         my @tmp = split /\t/, $str;
-        next if @tmp != 17;  # Èô±íÍ·³¬¹ı17ÁĞ£¬ÔòÌø¹ı¸ÃÎÄ¼ş  (ĞèÒªĞŞ¸ÄÎª26£¬ÒÑÖ§³ÖJRKµÄ25¸ömarker)
+        next if @tmp != 26;  # Èô±íÍ·³¬¹ı17ÁĞ£¬ÔòÌø¹ı¸ÃÎÄ¼ş  (ĞèÒªĞŞ¸ÄÎª26£¬ÒÔÖ§³ÖJRKµÄ25¸ömarker)
 
         # ÅĞ¶Ï±íÍ·µÄÁĞÃû £¨markerÃû×Ö£©ÔÚ %markerExist ÖĞÊÇ·ñ´æÔÚ£¬ÈôÓĞ %markerExistÖĞÃ»ÓĞµÄmarkerÃû£¬Ôò½« $yes = 0
-        foreach my $i(1..16){  # ĞèÒªĞŞ¸ÄÎª 1..25£¬ÒÑÖ§³ÖJRKµÄ25¸ömarker£»Í¬Ê± %markerExistĞèÒª¸üĞÂÎª25 marker
+        # foreach my $i(1..16){  # ĞèÒªĞŞ¸ÄÎª 1..25£¬ÒÑÖ§³ÖJRKµÄ25¸ömarker£»Í¬Ê± %markerExistĞèÒª¸üĞÂÎª25 marker
+        foreach my $i(1..25){  # ĞèÒªĞŞ¸ÄÎª 1..25£¬ÒÑÖ§³ÖJRKµÄ25¸ömarker£»Í¬Ê± %markerExistĞèÒª¸üĞÂÎª25 marker
                 $yes = 0 unless exists $markerExist{$tmp[$i]};
         }
         next if $yes != 1;  # ±íÍ·ÖĞ´æÔÚ %markerExistÖĞÃ»ÓĞµÄmarkerÃû£¬ÔòÌø¹ı¸ÃÎÄ¼ş
@@ -906,9 +908,9 @@ sub Open1_MouseOut{
 # 0	1Marker1	2Marker2	3Marker3	4Marker4	5Marker5	6Marker6	7Marker7	8Marker8	9Marker9	10Marker10	11Marker11	12Marker12	13Marker13	14Marker14	15Marker15	16Marker16 ... 25Marker25
 # Ê¾ÀıÈçÏÂ£º
 # 	D8S1179	D21S11	D7S820	CSF1PO	D3S1358	D5S818	D13S317	D16S539	D2S1338	D19S433	VWA	D12S391	D18S51	Amel	D6S1043	FGA
-# DT2000011	13¡¢16	29¡¢32.2	8¡¢11	11	16	10	11	12			14¡¢19		13¡¢14	X		21¡¢23
-# DT2000012	10¡¢13	30	11	10¡¢12	15¡¢17	11	10¡¢11	12			17¡¢18		16	X¡¢Y		22¡¢25
-# DT2000007	11¡¢15	30¡¢32.2	11¡¢12	11¡¢12	15¡¢17	7¡¢10	8	11¡¢13			17¡¢19		15¡¢16	X¡¢Y		21¡¢24
+# DT2000011	13,16	29,32.2	8,11	11	16	10	11	12			14,19		13,14	X		21,23
+# DT2000012	10,13	30	11	10,12	15,17	11	10,11	12			17,18		16	X,Y		22,25
+# DT2000007	11,15	30,32.2	11,12	11,12	15,17	7,10	8	11,13			17,19		15,16	X,Y		21,24
 # ÌØ±ğËµÃ÷£º 1)´ø±íÍ·; 2)×Ö¶Î¼äÒÔTAB·Ö¸ô; 3) ÎÄ¼şÀ©Õ¹ÃûĞèÒª ".txt" #################################################################################################################################################################################################
 sub List2_DblClick{
         if (%PrevAllele){
@@ -942,11 +944,11 @@ sub List2_DblClick{
         }
         my $tmp = <IN>;  # ¶ÁÈ¡ "ÒÑÓĞÊı¾İ" Ñ¡ÖĞÎÄ¼şµÄ±íÍ·
         chomp $tmp;
-        my $yes = 1;  # ÓÃÓÚ¼ÇÂ¼Ñ¡ÖĞÎÄ¼şµÄ±íÍ·¸ñÊ½ÊÇ·ñÕıÈ·:1) 17ÁĞ; 2) 16ÁĞmarkerÃûÔÚ %markerExistÖĞ¾ù´æÔÚ
+        my $yes = 1;  # ÓÃÓÚ¼ÇÂ¼Ñ¡ÖĞÎÄ¼şµÄ±íÍ·¸ñÊ½ÊÇ·ñÕıÈ·:1) 26ÁĞ; 2) 25ÁĞmarkerÃûÔÚ %markerExistÖĞ¾ù´æÔÚ
         my @tmp = split /\t/, $tmp;
-        $yes = 0 if @tmp != 17;  # ÅĞ¶Ï ±íÍ·ÊÇ·ñÎ´ 17ÁĞ
+        $yes = 0 if @tmp != 26;  # ÅĞ¶Ï ±íÍ·ÊÇ·ñÎ´ 26ÁĞ
         print "L1014:YES:",$yes,"\n";
-        foreach $i(1..16){  # ÅĞ¶Ï±íÍ·ÖĞºó16ÁĞ¶ÔÓ¦µÄ16¸ömarkerÃû ÔÚ %markerExist ÖĞÊÇ·ñ´æÔÚ£¬ÈôÓĞ²»´æÔÚµÄ£¬Ôò½« $yes = 0
+        foreach $i(1..25){  # ÅĞ¶Ï±íÍ·ÖĞºó25ÁĞ¶ÔÓ¦µÄ25¸ömarkerÃû ÔÚ %markerExist ÖĞÊÇ·ñ´æÔÚ£¬ÈôÓĞ²»´æÔÚµÄ£¬Ôò½« $yes = 0
                 $yes = 0 unless exists $markerExist{$tmp[$i]};
                 # print $tmp[$i],"|",$yes,"\n";
         }
@@ -962,9 +964,9 @@ sub List2_DblClick{
 # 0	1Marker1	2Marker2	3Marker3	4Marker4	5Marker5	6Marker6	7Marker7	8Marker8	9Marker9	10Marker10	11Marker11	12Marker12	13Marker13	14Marker14	15Marker15	16Marker16 ... 25Marker25
 # Ê¾ÀıÈçÏÂ£º
 # 	D8S1179	D21S11	D7S820	CSF1PO	D3S1358	D5S818	D13S317	D16S539	D2S1338	D19S433	VWA	D12S391	D18S51	Amel	D6S1043	FGA
-# DT2000011	13¡¢16	29¡¢32.2	8¡¢11	11	16	10	11	12			14¡¢19		13¡¢14	X		21¡¢23
-# DT2000012	10¡¢13	30	11	10¡¢12	15¡¢17	11	10¡¢11	12			17¡¢18		16	X¡¢Y		22¡¢25
-# DT2000007	11¡¢15	30¡¢32.2	11¡¢12	11¡¢12	15¡¢17	7¡¢10	8	11¡¢13			17¡¢19		15¡¢16	X¡¢Y		21¡¢24
+# DT2000011	13,16	29,32.2	8,11	11	16	10	11	12			14,19		13,14	X		21,23
+# DT2000012	10,13	30	11	10,12	15,17	11	10,11	12			17,18		16	X,Y		22,25
+# DT2000007	11,15	30,32.2	11,12	11,12	15,17	7,10	8	11,13			17,19		15,16	X,Y		21,24
 #########################################################################################################################################################################################################################################
         while (<IN>){
                 chomp;
@@ -982,7 +984,7 @@ sub List2_DblClick{
                 }
                 ###´Ë´¦Èç¹û²»Ğ´£¬»áµ¼ÖÂĞÂµÄAlleleÎŞ·¨¶ÁÈ¡###
                 my $num = shift @str;  # »ñÈ¡ ÊµÑé±àÂë£¬ÒÆ³ıÊµÑé±àÂëÖ®ºó£¬ @str ÖĞ½ö´æÔÚËùÓĞmarkerµÄĞÍ±ğ
-                foreach my $tmp(@markers){  # ±éÀúËùÓĞmarker  ** ×¢Òâ£¬ÕâÑùĞ´£¬ĞèÒª±£Ö¤ÒÑÓĞÊı¾İÖĞµÄmarkerË³Ğò Óë @markersÖĞµÄË³ĞòÍêÈ«Ò»ÖÂ£¬·ñÔò»á¸ã»ì¡£**
+                foreach my $tmp(@markers_jrk){  # ±éÀúËùÓĞmarker  ** ×¢Òâ£¬ÕâÑùĞ´£¬ĞèÒª±£Ö¤ÒÑÓĞÊı¾İÖĞµÄmarkerË³Ğò Óë @markers_jrkÖĞµÄË³ĞòÍêÈ«Ò»ÖÂ£¬·ñÔò»á¸ã»ì¡£**
                         $PrevAllele{$num}{$tmp} = shift @str;  # ±£´æÃ¿¸ö ÊµÑé±àÂë µÄÃ¿¸ömarker ¶ÔÓ¦µÄ ĞÍ±ğĞÅÏ¢
                         # print $num,"|",$tmp,"|", $PrevAllele{$num}{$tmp} ,"\n" if $PrevAllele{$num}{$tmp}=~ /\s/;
                         $PrevAllele{$num}{$tmp} =~ s/\s//g;  # È¥µô ĞÍ±ğĞÅÏ¢ ÖĞµÄ¿Õ×Ö·û
@@ -1131,11 +1133,11 @@ A:
                 # $worksheet->write(($i-1)*38+19,0,' ', $format1);
                 # $worksheet->write(($i-1)*38+20,0,' ', $format1);
                 my $j = 2;
-                foreach (@markers){
-                        $worksheet->write(($i-1)*38+$j,0,$markers[$j-2], $format1);
-                        $worksheet->write(($i-1)*38+$j,15,$markers[$j-2], $format1);
-                        $worksheet->write(($i-1)*38+$j+19,0,$markers[$j-2], $format1);
-                        $worksheet->write(($i-1)*38+$j+19,15,$markers[$j-2], $format1);
+                foreach (@markers_jrk){
+                        $worksheet->write(($i-1)*38+$j,0,$markers_jrk[$j-2], $format1);
+                        $worksheet->write(($i-1)*38+$j,15,$markers_jrk[$j-2], $format1);
+                        $worksheet->write(($i-1)*38+$j+19,0,$markers_jrk[$j-2], $format1);
+                        $worksheet->write(($i-1)*38+$j+19,15,$markers_jrk[$j-2], $format1);
                         $j ++;
                 }
         }
@@ -1153,7 +1155,7 @@ A:
                 $worksheet->write(int($i/5)*19,$i%5*3+2,decode('GB2312', $data_in[$seq[-1]][9]), $format1);  # µÚ0ĞĞ µÚ2ÁĞ£¬Ğ´ÉÏ "ÊõÇ°»¼Õß" µÄĞÕÃû
                 $worksheet->write(int($i/5)*19+1,$i%5*3+1,$AAA, $format1);  # µÚ1ĞĞ µÚ1ÁĞ£¬Ğ´ÉÏ "ÊõÇ°»¼Õß" µÄĞÍ±ğ
                 $worksheet->write(int($i/5)*19+1,$i%5*3+2,$BBB, $format1);  # µÚ1ĞĞ µÚ2ÁĞ£¬Ğ´ÉÏ "ÊõÇ°¹©Õß" µÄĞÍ±ğ
-                foreach (@markers){  # ±éÀúĞ´ÈëÃ¿¸ö marker µÄĞÍ±ğ
+                foreach (@markers_jrk){  # ±éÀúĞ´ÈëÃ¿¸ö marker µÄĞÍ±ğ
                         unless (exists $PrevAllele{$AAA}){  # "ÊõÇ°»¼Õß" ¶ÔÓ¦µÄ ÊµÑé±àÂëÔÚ ÒÑÓĞÊı¾İ ÖĞ²»´æÔÚ  # %PrevAllele ±£´æÒÑÓĞÊı¾İÖĞ Ã¿¸ö ÊµÑé±àÂë µÄÃ¿¸ömarker ¶ÔÓ¦µÄ ĞÍ±ğĞÅÏ¢
                                 $strA = ' ';  # ²»´æÔÚ£¬Ôò½« $strA = ' '
                         }else{  # "ÊõÇ°»¼Õß" ¶ÔÓ¦µÄ ÊµÑé±àÂëÔÚ ÒÑÓĞÊı¾İ ÖĞ´æÔÚ
@@ -1468,14 +1470,14 @@ sub Read3_Click{
 # Ê¾ÀıÈçÏÂ£º
 # Sample Name	Panel	Marker	Allele 1	Allele 2	Allele 3	Allele 4	Peak Area 1	Peak Area 2	Peak Area 3	Peak Area 4	PHR	AN
 # 20FCM00134	Sinofiler_v1	D8S1179	10	11			41782	38113			0	0
-                        if    ($line[6]){$tmpallele = join "¡¢", ($line[3],$line[4],$line[5],$line[6]);}  # $line[6] = Allele 4 ²»Îª¿Õ
-                        elsif ($line[5]){$tmpallele = join "¡¢", ($line[3],$line[4],$line[5]);}  # Allele 4 Îª¿Õ && Allele 3 ²»Îª¿Õ
-                        elsif ($line[4]){$tmpallele = join "¡¢", ($line[3],$line[4]);}  # Allele 4 ºÍ Allele 3 ¶¼Îª¿Õ && Allele 2  ²»Îª¿Õ
+                        if    ($line[6]){$tmpallele = join ",", ($line[3],$line[4],$line[5],$line[6]);}  # $line[6] = Allele 4 ²»Îª¿Õ
+                        elsif ($line[5]){$tmpallele = join ",", ($line[3],$line[4],$line[5]);}  # Allele 4 Îª¿Õ && Allele 3 ²»Îª¿Õ
+                        elsif ($line[4]){$tmpallele = join ",", ($line[3],$line[4]);}  # Allele 4 ºÍ Allele 3 ¶¼Îª¿Õ && Allele 2  ²»Îª¿Õ
                         else            {$tmpallele =             $line[3];}  # Allele 4 , Allele 3 ºÍ Allele 2 ¶¼Îª¿Õ
 
-                        if    ($line[10]){$tmparea = join "¡¢", ($line[7],$line[8],$line[9],$line[10]);}  # Peak Area 4 ²»Îª¿Õ
-                        elsif ($line[9]) {$tmparea = join "¡¢", ($line[7],$line[8],$line[9]);}  # Peak Area 4 Îª¿Õ && Peak Area 3 ²»Îª¿Õ
-                        elsif ($line[8]) {$tmparea = join "¡¢", ($line[7],$line[8]);}  # Peak Area 4 ºÍ Peak Area 3 ¶¼Îª¿Õ && Peak Area 2 ²»Îª¿Õ
+                        if    ($line[10]){$tmparea = join ",", ($line[7],$line[8],$line[9],$line[10]);}  # Peak Area 4 ²»Îª¿Õ
+                        elsif ($line[9]) {$tmparea = join ",", ($line[7],$line[8],$line[9]);}  # Peak Area 4 Îª¿Õ && Peak Area 3 ²»Îª¿Õ
+                        elsif ($line[8]) {$tmparea = join ",", ($line[7],$line[8]);}  # Peak Area 4 ºÍ Peak Area 3 ¶¼Îª¿Õ && Peak Area 2 ²»Îª¿Õ
                         else             {$tmparea =             $line[7];}  # Peak Area 4, 3,2 ¶¼Îª¿Õ
 
                         # if (exists $PrevAllele{$num}{$line[2]}){
@@ -1708,8 +1710,8 @@ sub RUN_Click{
         $doctor{'  '}    = '';
         $hosptl_num{'  '}= '';
         $bed_num{'  '}   = '';
-        foreach (@markers){$allele{'  '}{$_} = ' '; }
-        foreach (@markers){$area  {'  '}{$_} = ' '; }
+        foreach (@markers_jrk){$allele{'  '}{$_} = ' '; }
+        foreach (@markers_jrk){$area  {'  '}{$_} = ' '; }
 
 
         $sb->Move( 0, ($main->ScaleHeight() - $sb->Height()) );
@@ -1910,7 +1912,7 @@ sub RUN_Click{
 
                 my $errorcount = 0;  # ´æÔÚ´íÎóµÄmarkerÎ»µã¸öÊı
                 # ±éÀú¸Ã ±¨¸æµ¥±àºÅ ¶ÔÓ¦µÄÃ¿¸ömarkerÎ»µã
-                foreach my $k (0..$#markers){
+                foreach my $k (0..$#markers_jrk){
 
                         # if ($conclusion[$z]){
                                 # if ($conclusion[$z] eq 'Ìø¹ı'){
@@ -1924,11 +1926,11 @@ sub RUN_Click{
                         # print $num3[$z],"|",$allele{$num3[$z]}{$markers[$k]},"\n";
                         # print $num3[$z],"|",$area{$num3[$z]}{$markers[$k]},"\n";
 
-                        my @allele1 = split/¡¢/, $allele{$num1[$z]}{$markers[$k]};  # »ñÈ¡¸Ã±¨¸æµ¥ "ÊõÇ°»¼Õß" Ã¿¸öÎ»µãµÄĞÍ±ğ
+                        my @allele1 = split/,/, $allele{$num1[$z]}{$markers_jrk[$k]};  # »ñÈ¡¸Ã±¨¸æµ¥ "ÊõÇ°»¼Õß" Ã¿¸öÎ»µãµÄĞÍ±ğ
                         $alleles_before{$_} = 1 foreach @allele1;  # ½« "ÊõÇ°»¼Õß" Ã¿¸öÎ»µã³öÏÖµÄgenotype ±ê¼ÇÎª 1. ÓÃ %alleles_before ¼ÇÂ¼¡£
-                        my @allele2 = split/¡¢/, $allele{$num2[$z]}{$markers[$k]};  # »ñÈ¡¸Ã±¨¸æµ¥ "ÊõÇ°¹©Õß" Ã¿¸öÎ»µãµÄĞÍ±ğ
+                        my @allele2 = split/,/, $allele{$num2[$z]}{$markers_jrk[$k]};  # »ñÈ¡¸Ã±¨¸æµ¥ "ÊõÇ°¹©Õß" Ã¿¸öÎ»µãµÄĞÍ±ğ
                         $alleles_before{$_} = 1 foreach @allele2;  # ½« "ÊõÇ°¹©Õß" Ã¿¸öÎ»µã³öÏÖµÄgenotype ±ê¼ÇÎª 1. ÓÃ %alleles_before ¼ÇÂ¼¡£
-                        my @allele3 = split/¡¢/, $allele{$num3[$z]}{$markers[$k]};  # »ñÈ¡¸Ã±¨¸æµ¥ "Êõºó»¼Õß" Ã¿¸öÎ»µãµÄĞÍ±ğ
+                        my @allele3 = split/,/, $allele{$num3[$z]}{$markers_jrk[$k]};  # »ñÈ¡¸Ã±¨¸æµ¥ "Êõºó»¼Õß" Ã¿¸öÎ»µãµÄĞÍ±ğ
 
                         # ÅĞ¶Ï "Êõºó»¼Õß" ÊÇ·ñ´æÔÚ "ÊõÇ°»¼Õß" and "ÊõÇ°¹©Õß" ÖĞ¾ùÎ´³öÏÖµÄ genotype
                         foreach (@allele3){
@@ -1940,7 +1942,7 @@ sub RUN_Click{
                                 }
                         }
 
-                        my @area3   = split/¡¢/, $area{$num3[$z]}{$markers[$k]};
+                        my @area3   = split/,/, $area{$num3[$z]}{$markers_jrk[$k]};
                         # print $_,"|" foreach @allele1;
                         # print $_,"|" foreach @allele2;
                         # print $_,"|" foreach @allele3;
@@ -1960,18 +1962,18 @@ sub RUN_Click{
 
                 # ±éÀúÃ¿¸öÎ»µã£¬ÅĞ¶ÏÃ¿¸öÎ»µãµÄ×é³ÉÀàĞÍ ´æÈë %type
                 # ±éÀúÃ¿¸öÎ»µã£¬¸ù¾İÎ»µã×é³ÉÀàĞÍ£¬¼ÆËãÆä Ç¶ºÏÂÊ ´æÈë %count
-                foreach my $k (0..$#markers){
+                foreach my $k (0..$#markers_jrk){
                         next if $count[$z][$k] eq 'error';
-                        my @allele1 = split/¡¢/, $allele{$num1[$z]}{$markers[$k]};
-                        my @allele2 = split/¡¢/, $allele{$num2[$z]}{$markers[$k]};
-                        my @allele3 = split/¡¢/, $allele{$num3[$z]}{$markers[$k]};
-                        my @area3   = split/¡¢/, $area{$num3[$z]}{$markers[$k]};
+                        my @allele1 = split/,/, $allele{$num1[$z]}{$markers_jrk[$k]};
+                        my @allele2 = split/,/, $allele{$num2[$z]}{$markers_jrk[$k]};
+                        my @allele3 = split/,/, $allele{$num3[$z]}{$markers_jrk[$k]};
+                        my @area3   = split/,/, $area{$num3[$z]}{$markers_jrk[$k]};
 
-                        if ($allele{$num1[$z]}{$markers[$k]} eq $allele{$num2[$z]}{$markers[$k]}){
+                        if ($allele{$num1[$z]}{$markers_jrk[$k]} eq $allele{$num2[$z]}{$markers_jrk[$k]}){
                         #ÏàÍ¬   (A,A || AB,AB)
                                 $type[$z][$k] = '';
                                 $count[$z][$k] = '';
-                        }elsif ($markers[$k] eq 'Amel'){
+                        }elsif ($markers_jrk[$k] eq 'Amel'){
                                 $type[$z][$k] = '';
                                 $count[$z][$k] = '';
                         }elsif (@allele2 == 1 && @allele1 == 2 && ($allele1[0] eq $allele2[0] || $allele1[1] eq $allele2[0])){
@@ -2126,7 +2128,7 @@ sub RUN_Click{
                 ################################################  2020.05.22.16.18 ################################################
                 my @temp_marker = ();  # ¼ÇÂ¼Ã¿¸ömarker ÊÇ '»ìºÏÇ¶ºÏ' »¹ÊÇ ' '£¨ÍêÈ«Ç¶ºÏ£©
                 my @tempcount = ();  # ¼ÇÂ¼Ã¿·İ±¨¸æ ÓĞÇ¶ºÏÂÊ½á¹ûÎ»µã µÄÇ¶ºÏÂÊ
-                foreach my $k (0..$#markers){
+                foreach my $k (0..$#markers_jrk){
                         if ($count[$z][$k] =~ /\d/){
                                 # $count_sum[$z] += $count[$z][$k];
                                 # $count_n[$z] += 1;
@@ -2141,7 +2143,7 @@ sub RUN_Click{
                         }
                 }
 
-                foreach my $k (0..$#markers){
+                foreach my $k (0..$#markers_jrk){
                         $marker_type[$z][$k] = $temp_marker[$k];  # ¼ÇÂ¼ µÚ¼¸¸ö±¨¸æµ¥±àºÅ µÄµÚ¼¸¸ömarker µÄ×´Ì¬£º'»ìºÏÇ¶ºÏ' / ' ' (ÍêÈ«Ç¶ºÏ)
                 }
                 $count_n[$z] = scalar(@tempcount);  # ¼ÇÂ¼Ã¿·İ±¨¸æ ÓĞÇ¶ºÏÂÊ½á¹ûµÄÎ»µã¸öÊı
@@ -2296,15 +2298,15 @@ sub RUN_Click{
 
                 ################################################  2020.05.24.14.32 ################################################
                 # ´ÓµÚÒ»ÁĞµÄÈıĞĞ¿ªÊ¼£¬½« markerÃû Ğ´ÈëµÚÒ»ÁĞ
-                for my $j (0..$#markers){
-                        $countsheet->write($j+2,0,$markers[$j], $format101);
+                for my $j (0..$#markers_jrk){
+                        $countsheet->write($j+2,0,$markers_jrk[$j], $format101);
                 }
-                # ±éÀúĞ´ÈëÃ¿¸ö marker "ÊõÇ°»¼Õß" "ÊõÇ°¹©Õß" "Êõºó»¼Õß" Ñù±¾µÄ ĞÍ±ğ(%allele)¡¢Ãæ»ı(%area)¡¢×´Ì¬(%type)¡¢Ç¶ºÏÂÊ(%count)
-                foreach my $k (0..$#markers){
-                        my @allele1 = split/¡¢/, $allele{$num1[$z]}{$markers[$k]};
-                        my @allele2 = split/¡¢/, $allele{$num2[$z]}{$markers[$k]};
-                        my @allele3 = split/¡¢/, $allele{$num3[$z]}{$markers[$k]};
-                        my @area3   = split/¡¢/, $area{$num3[$z]}{$markers[$k]};
+                # ±éÀúĞ´ÈëÃ¿¸ö marker "ÊõÇ°»¼Õß" "ÊõÇ°¹©Õß" "Êõºó»¼Õß" Ñù±¾µÄ ĞÍ±ğ(%allele),Ãæ»ı(%area),×´Ì¬(%type),Ç¶ºÏÂÊ(%count)
+                foreach my $k (0..$#markers_jrk){
+                        my @allele1 = split/,/, $allele{$num1[$z]}{$markers_jrk[$k]};
+                        my @allele2 = split/,/, $allele{$num2[$z]}{$markers_jrk[$k]};
+                        my @allele3 = split/,/, $allele{$num3[$z]}{$markers_jrk[$k]};
+                        my @area3   = split/,/, $area{$num3[$z]}{$markers_jrk[$k]};
                         for my $l (0..$#allele1){
                                 $countsheet->write($k+2,$l+1,$allele1[$l], $format101);
                         }
@@ -2368,8 +2370,8 @@ sub RUN_Click{
 
                 $worksheet->set_footer($footer);
 
-                # ÔÚµÚÒ»ĞĞµÚ¶şÁĞ²åÈë ¹«Ë¾logo (pic/İ¶Ë¶±´¿Ïlogo.png)
-                $worksheet->insert_image('B1', "pic/İ¶Ë¶±´¿Ïlogo.png", 10, 10, 0.73, 0.73);
+                # ÔÚµÚÒ»ĞĞµÚ¶şÁĞ²åÈë ¹«Ë¾logo (pic/logo.png)
+                $worksheet->insert_image('B1', "pic/logo.png", 10, 10, 0.15, 0.15);
 
                 # Ğ´Èë ¸÷ÏîĞÅÏ¢
                 $worksheet->merge_range('B1:I1', decode('GB2312','Ç¶ºÏ×´Ì¬·ÖÎö±¨¸æ'), $format1);
@@ -2450,11 +2452,11 @@ sub RUN_Click{
                 $worksheet->merge_range('G17:H17', decode('GB2312','Ñù±¾±àºÅ£º'.$num3[$z]), $format16);  # Ğ´Èë "Êõºó»¼Õß" µÄ ÊµÑé±àÂë
                 $worksheet->merge_range('I15:I17', decode('GB2312','Î»µã×´Ì¬'), $format15);  # Ğ´Èë "Î»µã×´Ì¬" ±íÍ·
                 # Ğ´Èë Ã¿¸ömarkerµÄĞÍ±ğ
-                for my $q (0..$#markers){
-                        $worksheet->write($q+17,1,$markers[$q], $format6);  # Ğ´Èë marker Ãû
-                        $worksheet->merge_range($q+17,2,$q+17,3,decode('GB2312',$allele{$num1[$z]}{$markers[$q]}), $format7); # Ğ´Èë "ÊõÇ°»¼Õß" Ã¿¸ömarker ¶ÔÓ¦µÄĞÍ±ğ
-                        $worksheet->merge_range($q+17,4,$q+17,5,decode('GB2312',$allele{$num2[$z]}{$markers[$q]}), $format7);  # Ğ´Èë "ÊõÇ°¹©Õß" Ã¿¸ömarker ¶ÔÓ¦µÄĞÍ±ğ
-                        $worksheet->merge_range($q+17,6,$q+17,7,decode('GB2312',$allele{$num3[$z]}{$markers[$q]}), $format7);  # Ğ´Èë "Êõºó»¼Õß" Ã¿¸ömarker ¶ÔÓ¦µÄĞÍ±ğ
+                for my $q (0..$#markers_jrk){
+                        $worksheet->write($q+17,1,$markers_jrk[$q], $format6);  # Ğ´Èë marker Ãû
+                        $worksheet->merge_range($q+17,2,$q+17,3,decode('GB2312',$allele{$num1[$z]}{$markers_jrk[$q]}), $format7); # Ğ´Èë "ÊõÇ°»¼Õß" Ã¿¸ömarker ¶ÔÓ¦µÄĞÍ±ğ
+                        $worksheet->merge_range($q+17,4,$q+17,5,decode('GB2312',$allele{$num2[$z]}{$markers_jrk[$q]}), $format7);  # Ğ´Èë "ÊõÇ°¹©Õß" Ã¿¸ömarker ¶ÔÓ¦µÄĞÍ±ğ
+                        $worksheet->merge_range($q+17,6,$q+17,7,decode('GB2312',$allele{$num3[$z]}{$markers_jrk[$q]}), $format7);  # Ğ´Èë "Êõºó»¼Õß" Ã¿¸ömarker ¶ÔÓ¦µÄĞÍ±ğ
                         $worksheet->write($q+17,8,decode('GB2312',$marker_type[$z][$q]), $format6);  # Ğ´Èë µÚ¼¸¸ö±¨¸æµ¥±àºÅ µÄµÚ¼¸¸ömarker µÄ×´Ì¬£º'»ìºÏÇ¶ºÏ' / ' ' (ÍêÈ«Ç¶ºÏ)
                 }
 
@@ -2801,7 +2803,7 @@ sub RUN_Click{
                         $graphic->set_footer($footer);  # $footer: L2418 - L2421
 
                         # B1 ²åÈë logo
-                        $graphic->insert_image('B1', "pic/İ¶Ë¶±´¿Ïlogo.png", 10, 10, 0.73, 0.73);
+                        $graphic->insert_image('B1', "pic/logo.png", 10, 10, 0.15, 0.15);
 
                         # Ğ´Èë "Ç¶ºÏÇúÏß" ±íÍ·
                         $graphic->merge_range('B1:G1', decode('GB2312','Ç¶ºÏÇúÏß'), $format1);
@@ -3487,7 +3489,7 @@ sub RUN_Click{
                                     }
 
                                     # »ñÈ¡ ¹ÇËèÑªÑù±¾µÄ Ç¶ºÏÂÊ
-                                    if ($SmpType =~ /¹ÇËèÑª/){
+                                    if ($SmpType =~ /¹ÇËèÑª|¹ÇËè/){
                                         $graphic->write($i+28, 2, sprintf("%.2f",$Chmrsm), $Gfmt4);  # Ğ´Èë "Ç¶ºÏÂÊ" ½á¹û£¬°´°Ù·Ö±È¸öÊı£¬±£ÁôĞ¡Êıµãºó2Î»ÓĞĞ§Êı×Ö
                                     } elsif ($SmpType =~ /ÍâÖÜÑª/){
                                         $graphic->write($i+28, 3, sprintf("%.2f",$Chmrsm), $Gfmt4);  # Ğ´Èë "Ç¶ºÏÂÊ" ½á¹û£¬°´°Ù·Ö±È¸öÊı£¬±£ÁôĞ¡Êıµãºó2Î»ÓĞĞ§Êı×Ö
