@@ -5,3 +5,4 @@ ppm install Encode
 ppm install Win32
 ppm install Win32::GUI
 ppm install Unicode::Map
+ppm install File::Path

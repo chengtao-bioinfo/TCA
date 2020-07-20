@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
-#20171001 若下机数据有错误，术前术后对不上，将会跳过出错的报告
-#20171105 日期格式unifying，预览改为样本编号，嵌合率统一2位小数
-#20170202 加SD和CV，医院名称可以自动换行
+# 2020/7/15 v20200715 版本发布
+# 2020/7/20 v20200720 版本发布
+#           v20200720 版本更新时间：2020/7/20
+#           v20200720 版本更新内容：详见
 
 use strict;
 use Spreadsheet::ParseExcel;
@@ -11,6 +12,7 @@ use Excel::Writer::XLSX::Chart::Line;
 use Encode;
 use Win32;
 use Win32::GUI();
+use File::Path qw(remove_tree);
 
 my ($mday,$mon,$year) = (localtime)[3..5];
 $mday = sprintf("%d", $mday);
@@ -1392,16 +1394,23 @@ sub Read3_Click{
                 my %USE = ();
                 while(<IN>){
                         chomp;
-                        next if /Sample\sName/;  # 表头行 "Sample Name"开头
-                        next if /LADDER/;  # 跳过 LADDER行 （内标）
-                        next if /NC\s/;  # 跳过含有 NC 的行，空对照
-                        # next if /QC\d+\s/;  # 跳过含有 QC 的行，质控品? （未启用）
+                        my $line = $_ ; print "L1396:$line\n";
+                        # next if /Sample\sName/;  # 表头行 "Sample Name"开头
+                        my $str_header = decode("utf8", "样本名称"); print "L1397:$str_header\n";
+                        # next if /$str_header/;  # 表头行 "样本名称" 开头
+                        if ($line =~ /$str_header/){
+                            print "L1408:样本名称\n";
+                            next;
+                        }
+                        next if $line =~ /LADDER/;  # 跳过 LADDER行 （内标）
+                        next if $line =~ /NC\s/;  # 跳过含有 NC 的行，空对照
+                        next if $line =~ /QC\d+\s/;  # 跳过含有 QC 的行，质控品? （未启用）
 
-                        my @line = split /\t/,$_;
+                        my @line = split /\t/,$line;
                         my ($tmpallele, $tmparea, $num);
                         if ($line[2] =~ /vWA/){$line[2] =~ s/vWA/VWA/;}  # 将marker "vWA" 替换为 "VMA"
                         if ($line[2] =~ /AMEL/){$line[2] =~ s/AMEL/Amel/;}  # 将marker "AMEL" 替换为 "Amel"
-                        my $found = 0;
+                        my $found = 0; print "L1404:$line[0]\n" ;
                         if (exists $exp_id{$line[0]}){  # $line[0]：在 供患信息.txt 中对应"实验编码" ，但在 下机数据.txt 中对应 "Sample Name"
                                 $num = $line[0];  # $num：存放在 供患信息.txt 中存在的 "实验编码"
                                 $found = 1;
@@ -1926,11 +1935,11 @@ sub RUN_Click{
                         # print $num3[$z],"|",$allele{$num3[$z]}{$markers[$k]},"\n";
                         # print $num3[$z],"|",$area{$num3[$z]}{$markers[$k]},"\n";
 
-                        my @allele1 = split/,/, $allele{$num1[$z]}{$markers_jrk[$k]};  # 获取该报告单 "术前患者" 每个位点的型别
+                        my @allele1 = split/,/, $allele{$num1[$z]}{$markers_jrk[$k]};  print "L1929:$z\t$k\t$allele{$num1[$z]}{$markers_jrk[$k]}\n"; # 获取该报告单 "术前患者" 每个位点的型别
                         $alleles_before{$_} = 1 foreach @allele1;  # 将 "术前患者" 每个位点出现的genotype 标记为 1. 用 %alleles_before 记录。
-                        my @allele2 = split/,/, $allele{$num2[$z]}{$markers_jrk[$k]};  # 获取该报告单 "术前供者" 每个位点的型别
+                        my @allele2 = split/,/, $allele{$num2[$z]}{$markers_jrk[$k]};  print "L1931:$z\t$k\t$allele{$num2[$z]}{$markers_jrk[$k]}\n"; # 获取该报告单 "术前供者" 每个位点的型别
                         $alleles_before{$_} = 1 foreach @allele2;  # 将 "术前供者" 每个位点出现的genotype 标记为 1. 用 %alleles_before 记录。
-                        my @allele3 = split/,/, $allele{$num3[$z]}{$markers_jrk[$k]};  # 获取该报告单 "术后患者" 每个位点的型别
+                        my @allele3 = split/,/, $allele{$num3[$z]}{$markers_jrk[$k]};  print "L1933:$z\t$k\t$allele{$num3[$z]}{$markers_jrk[$k]}\n"; # 获取该报告单 "术后患者" 每个位点的型别
 
                         # 判断 "术后患者" 是否存在 "术前患者" and "术前供者" 中均未出现的 genotype
                         foreach (@allele3){
@@ -1951,9 +1960,9 @@ sub RUN_Click{
                 }
 
                 # 如果 存在错误的位点个数 >= 6，则报错，提示错误信息，跳过该报告单
-                if ($errorcount >= 6){
+                if ($errorcount >= 10){  # Test, change 6 to 10
                         $success = 0;
-                        $error = '报告单号'.$TCAID.'的16个位点中'.$errorcount.'个分型错误！请检查！将跳过出具此份报告。';
+                        $error = '报告单号'.$TCAID.'的25个位点中'.$errorcount.'个分型错误！请检查！将跳过出具此份报告。';
                         Win32::MsgBox $error, 0, "注意";
                         $RptBox -> Append("失败【分型数据错误】\r\n");
                         $conclusion[$z] = '跳过';
@@ -1973,7 +1982,10 @@ sub RUN_Click{
                         #相同   (A,A || AB,AB)
                                 $type[$z][$k] = '';
                                 $count[$z][$k] = '';
-                        }elsif ($markers_jrk[$k] eq 'Amel'){
+                        }elsif ($markers_jrk[$k] eq 'Amel'){  # 性染色体上的marker不参与嵌合率计算
+                                $type[$z][$k] = '';
+                                $count[$z][$k] = '';
+                        }elsif ($markers_jrk[$k] eq 'Yindel'){  # 性染色体上的marker不参与嵌合率计算. Update in v20200720
                                 $type[$z][$k] = '';
                                 $count[$z][$k] = '';
                         }elsif (@allele2 == 1 && @allele1 == 2 && ($allele1[0] eq $allele2[0] || $allele1[1] eq $allele2[0])){
@@ -1993,12 +2005,12 @@ sub RUN_Click{
                                 $count[$z][$k] = "error";
                         }
 
-                        # print "Type: ",$type[$z][$k],"\n";
+                        print "L1996:Type: ",$type[$z][$k],"\n";
 
                         my %areas;
                         for my $p (0..$#allele3){
                                 $areas{$allele3[$p]} = $area3[$p];
-                        }
+                        }  print "L2001:$z\t$k\t$markers_jrk[$k]\t$type[$z][$k]\n";
                         if ($type[$z][$k] eq 1){
 
                                 if (@allele1 == 2 && @allele2 == 2){
@@ -2086,7 +2098,7 @@ sub RUN_Click{
                         }elsif ($type[$z][$k] eq 3){
                                 $count[$z][$k] = "NA";
 
-                        }elsif ($type[$z][$k] eq 4){
+                        }elsif ($type[$z][$k] eq 4){ print "L2089:$allele2[0]\t$allele3[0]\t $allele2[1]\t$allele3[1]\n";
                                 if(@allele3 == 2 && $allele2[0] eq $allele3[0] && $allele2[1] eq $allele3[1]){
                                 # AB,AC,AC
                                         $count[$z][$k] = 1;
@@ -2128,7 +2140,7 @@ sub RUN_Click{
                 ################################################  2020.05.22.16.18 ################################################
                 my @temp_marker = ();  # 记录每个marker 是 '混合嵌合' 还是 ' '（完全嵌合）
                 my @tempcount = ();  # 记录每份报告 有嵌合率结果位点 的嵌合率
-                foreach my $k (0..$#markers_jrk){
+                foreach my $k (0..$#markers_jrk){ print "L2131:$z\t$k\t$count[$z][$k]\n";
                         if ($count[$z][$k] =~ /\d/){
                                 # $count_sum[$z] += $count[$z][$k];
                                 # $count_n[$z] += 1;
@@ -2189,6 +2201,7 @@ sub RUN_Click{
                 print "L2172:"."ReportDate:";print $_,"|" foreach (@{$ReportDate{$tempid}});print "\n";
         }
         my $chimerismSummary = sprintf "嵌合率汇总-%4d%02d%02d.txt",$year, $mon, $mday;  # 重新 写一个 嵌合率汇总 的结果文件
+        my $ana_date = sprintf "%4d-%02d-%02d",$year, $mon, $mday; print "ana_date: $ana_date\n";
         open SUM,"> $chimerismSummary";
         print SUM "姓名\t医院\t样本类型\t样本编号\t报告编号\t嵌合率\t有效位点\tSD\tCV\n";
 
@@ -2204,12 +2217,23 @@ sub RUN_Click{
                 }
                 # %sheet_name:
                 # 一批检测中 同一个 "患者姓名" 按照 CSTB 的设计，会对应多份 报告单(即, 对应多个 报告单编号)
+
+                # 为每个检测样本新建一个结果输出目录
+                my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                print "L2215:$Output_Dir\\$name{$num3[$z]}-STR检测报告-$hospital{$num3[$z]}-$ana_date\n";
+                if(-d "$Output_Dir\\$name{$num3[$z]}-STR检测报告-$hospital{$num3[$z]}-$ana_date"){
+                    print "L2217:Dir existed:$Output_Dir\\$name{$num3[$z]}-STR检测报告-$hosptl_num{$num3[$z]}-$ana_date\n" ;
+                } else {
+                    print "L2220:CreateDir:$Output_Dir\\$name{$num3[$z]}-STR检测报告-$hospital{$num3[$z]}-$ana_date\n" ;
+                    Win32::CreateDirectory("$Output_Dir\\$name{$num3[$z]}-STR检测报告-$hospital{$num3[$z]}-$ana_date");  # 新建文件夹, 带有中文名
+                }
+
                 # 定义 报告单 输出文件
                 if (exists $sheet_name{$sheet[$z]}){  # @sheet: 存放 第几份 报告对应的 "患者姓名"
                         $sheet_name{$sheet[$z]} += 1;
-                        $Output_rpt_str = sprintf "%s\\%s-%s%s%d.xlsx", $Output_Dir, $TCAID, $sheet[$z], 'AK', $sheet_name{$sheet[$z]};
+                        $Output_rpt_str = sprintf "%s\\%s-STR检测报告-%s-%s\\%s-%s%s%d.xlsx", $Output_Dir, $name{$num3[$z]}, $hospital{$num3[$z]}, $ana_date, $TCAID, $sheet[$z], 'AK', $sheet_name{$sheet[$z]};
                 }else{
-                        $Output_rpt_str = sprintf "%s\\%s-%s%s.xlsx", $Output_Dir, $TCAID, $sheet[$z], 'AK';
+                        $Output_rpt_str = sprintf "%s\\%s-STR检测报告-%s-%s\\%s-%s%s.xlsx", $Output_Dir, $name{$num3[$z]}, $hospital{$num3[$z]}, $ana_date, $TCAID, $sheet[$z], 'AK';
                         $sheet_name{$sheet[$z]} = 1;
                 }
 
@@ -2953,7 +2977,9 @@ sub RUN_Click{
 
             # 定义 报告单 输出文件
             ####### 需要获取 患者 本轮检测的报告单编号 ######
-            my $Output_rpt_str = sprintf "%s\\%s-%s.xlsx", $Output_Dir, $this_patient_ID_and_report_id{$tempid} ,$tempid;
+            # my $ana_date = sprintf "%4d%02d%02d.txt",$year, $mon, $mday; ; print "ana_date: $ana_date\n";
+            # $Output_Dir\\$name{$num3[$z]}-STR检测报告-$hosptl_num{$num3[$z]}-$ana_date
+            my $Output_rpt_str = sprintf "%s\\%s-STR检测报告-%s-%s\\%s-STR检测报告-%s-%s.xlsx", $Output_Dir, $this_patient_ID_and_patient_name{$tempid}, $this_patient_ID_and_hospital{$tempid}, $ana_date,$this_patient_ID_and_patient_name{$tempid}, $this_patient_ID_and_hospital{$tempid}, $ana_date;
             print "L2778:$Output_rpt_str\n" ;
             my $workbook;
             # 打开 报告输出文件，准备写报告
@@ -3244,13 +3270,13 @@ sub RUN_Click{
             $worksheet->merge_range('G45:H45', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format21);
             # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
             if (-e "pic/检测者.png"){
-                 $worksheet->insert_image('C45', "pic/检测者.png", 0, 8, 0.7, 0.7);
+                 $worksheet->insert_image('C45', "pic/检测者.png", 0, 4, 1.5, 1.5);
             }
             if (-e "pic/复核者.png"){
-                 $worksheet->insert_image('E45', "pic/复核者.png", 0, 8, 1.4, 1.4);
+                 $worksheet->insert_image('E45', "pic/复核者.png", 0, 8, 1.0, 1.0);
             }
             if (-e "pic/盖章.png"){
-                 $worksheet->insert_image('G45', "pic/盖章.png", 33, -35, 0.8, 0.8);
+                 $worksheet->insert_image('G45', "pic/盖章.png", 35, -15, 0.7, 0.7);
             }
 
             ################## 备注 部分 #########################
