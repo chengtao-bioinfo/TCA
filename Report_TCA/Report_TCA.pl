@@ -2377,7 +2377,7 @@ sub RUN_Click{
                 $worksheet->set_column(5,5,11);
                 $worksheet->set_column(6,7,10.5);
                 $worksheet->set_column(8,8,14);
-                my @rows = (73,8,3,18.4,22.8,22.8,10,16.2,16.2,16.2,16.2,16.2,10,18.6,18.6,18.6,18.6,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,39,57.6,12.6,25,25);
+                my @rows = (73,8,3,18.4,22.8,22.8,10,16.2,16.2,16.2,16.2,16.2,10,18.6,18.6,18.6,18.6,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,16.2,39,57.6,12.6,25,25);
                 for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
 
                 # 设置页面的左右及上边距
@@ -2387,12 +2387,12 @@ sub RUN_Click{
 
                 # 设置表单的 页脚
                 #my $footer = '&R'.decode('GB2312',$name{$num3[$z]}.'-'.$hospital{$num3[$z]}.'（'.$doctor{$num3[$z]}.'），第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
-                my $footer = '&L'.decode('GB2312','检验实验室：荻硕贝肯检验实验室')."\n".
+                # my $footer = '&L'.decode('GB2312','检验实验室：荻硕贝肯检验实验室')."\n".
                              #'&R'.decode('GB2312','CSTB-B-R-0021-1.0')."\n".
                              '&L'.decode('GB2312','咨询电话：020-62313880').
                              '&R'.decode('GB2312',$name{$num3[$z]}.'，第').'&P'.decode('GB2312','页/共').'&N'.decode('GB2312','页');
 
-                $worksheet->set_footer($footer);
+                # $worksheet->set_footer($footer);
 
                 # 在第一行第二列插入 公司logo (pic/logo.png)
                 $worksheet->insert_image('B1', "pic/logo.png", 10, 10, 0.15, 0.15);
@@ -2485,7 +2485,7 @@ sub RUN_Click{
                 }
 
                 # 写入 "检测结论" 表头
-                $worksheet->write('B34',decode('GB2312','检测结论：'),$format17);
+                $worksheet->write('B43',decode('GB2312','检测结论：'),$format17);
                 # 写入 "检测结论"
                 # 判断 样本的嵌合率 是否为 数字
                 if ($count_avg[$z] =~ /\d/){  # 如果为数字，则转换为百分比，保留2位有效数字
@@ -2494,19 +2494,19 @@ sub RUN_Click{
                         unless ($conclusion[$z]){  # 报告对应的结论 为 空
                                 if($count_avg[$z] >= 95){  # 嵌合率 >= 95%  ==> 完全嵌合
                                         $conclusion[$z] = '患者移植后'. $sample{$num3[$z]} . '中供者'. $cell_type . '细胞占'.$count_avg[$z].'%，表现为完全嵌合状态。';
-                                        $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
+                                        $worksheet->merge_range('C43:I43',decode('GB2312',$conclusion[$z]), $format18);
                                 }elsif($count_avg[$z] < 5){  # 嵌合率 < 5% ==> 微嵌合
                                         $conclusion[$z] = '患者移植后'. $sample{$num3[$z]} . '中供者'. $cell_type. '细胞占'.$count_avg[$z].'%，表现为微嵌合状态。';
-                                        $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
+                                        $worksheet->merge_range('C43:I43',decode('GB2312',$conclusion[$z]), $format18);
                                 }else{  # 5% <= 嵌合率 < 95%  ==> 混合嵌合
                                         $conclusion[$z] = '患者移植后'. $sample{$num3[$z]} . '中供者'. $cell_type. '细胞占'.$count_avg[$z].'%，表现为混合嵌合状态。';
-                                        $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
+                                        $worksheet->merge_range('C43:I43',decode('GB2312',$conclusion[$z]), $format18);
                                 }
                         }else{
-                                $worksheet->merge_range('C34:I34',decode('GB2312',$conclusion[$z]), $format18);
+                                $worksheet->merge_range('C43:I43',decode('GB2312',$conclusion[$z]), $format18);
                         }
                 }else{
-                        $worksheet->merge_range('C34:I34',decode('GB2312','无'), $format18);
+                        $worksheet->merge_range('C43:I43',decode('GB2312','无'), $format18);
                 }
 
                 ######################################### 存储 汇总报告单中需要的信息 ##########################################################
@@ -2541,7 +2541,7 @@ sub RUN_Click{
                 #        my %hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(B细胞) 的型别结果
                 #        my %hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(NK细胞) 的型别结果
                 #        my %hash_this_patient_ID_and_shuhou_patient_li_cell_genotypes = () ;  # 定义一个数组，用于存储 患者编码 对应的 术后(粒细胞) 的型别结果
-                my $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
+                $tempid = $identity{$TCAID};  # 获取 报告单编号 对应的 患者编码 # %identity 存储 报告单编号 <=> 患者编码(HUN001胡琳)
                 print "L2485:$z|$TCAID|$tempid\n" ;
                 if(!exists $this_patient_ID_and_report_id{$tempid}){
                     my $report_id = (split(/-/,$TCAID))[0] ;
@@ -2678,33 +2678,33 @@ sub RUN_Click{
 
 
                 # 写入 "备注" 表头
-                $worksheet->write('B35',decode('GB2312','备    注'),$format15);
+                $worksheet->write('B44',decode('GB2312','备    注'),$format15);
                 # 写入 "备注" 的信息
-                $worksheet->merge_range('C35:I35', decode('GB2312','1、嵌合状态界定[1]
+                $worksheet->merge_range('C44:I44', decode('GB2312','1、嵌合状态界定[1]
                     完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
                     [1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow
                     transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                     2、本报告用于生物学数据比对、分析，非临床检测报告。'), $format19);
 
                 # 写入 "检测者" "复核者" "检测日期" "报告日期"
-                $worksheet->merge_range('B37:C37', decode('GB2312','检  测  者'), $format7);
-                $worksheet->merge_range('B38:C38', decode('GB2312','复  核  者'), $format7);
-                $worksheet->merge_range('D37:E37', decode('GB2312',''), $format7);
-                $worksheet->merge_range('D38:E38', decode('GB2312',''), $format7);
-                $worksheet->merge_range('F37:G37', decode('GB2312','检测日期'), $format7);
-                $worksheet->merge_range('F38:G38', decode('GB2312','报告日期'), $format7);
-                $worksheet->merge_range('H37:I37', decode('GB2312',DateUnify($date1{$num3[$z]})), $format9);  # 将 "术后患者" 实验编码 对应的 "收样日期" 设置为 供患信息中 实验编码 对应的 生产时间  （用生产日期 设置 收样日期 ？）
-                $worksheet->merge_range('H38:I38', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format9);  # 设置 "报告日期" 为报告软件出报告的 当天
+                $worksheet->merge_range('B46:C46', decode('GB2312','检  测  者'), $format7);
+                $worksheet->merge_range('B47:C47', decode('GB2312','复  核  者'), $format7);
+                $worksheet->merge_range('D46:E46', decode('GB2312',''), $format7);
+                $worksheet->merge_range('D47:E47', decode('GB2312',''), $format7);
+                $worksheet->merge_range('F46:G46', decode('GB2312','检测日期'), $format7);
+                $worksheet->merge_range('F47:G47', decode('GB2312','报告日期'), $format7);
+                $worksheet->merge_range('H46:I46', decode('GB2312',DateUnify($date1{$num3[$z]})), $format9);  # 将 "术后患者" 实验编码 对应的 "收样日期" 设置为 供患信息中 实验编码 对应的 生产时间  （用生产日期 设置 收样日期 ？）
+                $worksheet->merge_range('H47:I47', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format9);  # 设置 "报告日期" 为报告软件出报告的 当天
 
                 # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
                 if (-e "pic/检测者.png"){
-                     $worksheet->insert_image('D37', "pic/检测者.png", 5, 0, 1, 1);
+                     $worksheet->insert_image('D46', "pic/检测者.png", 5, 5, 1.1, 1.1);
                 }
                 if (-e "pic/复核者.png"){
-                     $worksheet->insert_image('D38', "pic/复核者.png", 20, 0, 1, 1);
+                     $worksheet->insert_image('D47', "pic/复核者.png", 5, 8, 0.8, 0.8);
                 }
                 if (-e "pic/盖章.png"){
-                     $worksheet->insert_image('H37', "pic/盖章.png", 10, 12, 1, 1);
+                     $worksheet->insert_image('H46', "pic/盖章.png", 10, -10, 1, 1);
                 }
 
                 #姓名        医院        样本类型        样本编号        报告编号        嵌合率
@@ -2824,7 +2824,7 @@ sub RUN_Click{
                         #$graphic->set_margin_top(0.2);
 
                         # 设置 页脚
-                        $graphic->set_footer($footer);  # $footer: L2418 - L2421
+                        # $graphic->set_footer($footer);  # $footer: L2418 - L2421
 
                         # B1 插入 logo
                         $graphic->insert_image('B1', "pic/logo.png", 10, 10, 0.15, 0.15);
