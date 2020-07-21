@@ -2681,7 +2681,7 @@ sub RUN_Click{
                 $worksheet->write('B44',decode('GB2312','备    注'),$format15);
                 # 写入 "备注" 的信息
                 $worksheet->merge_range('C44:I44', decode('GB2312','1、嵌合状态界定[1]
-                    完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
+                    完全嵌合状态(CC): DC≥95%; 混合嵌合状态(MC): 5%≤DC<95%； 微嵌合状态: DC<5%。
                     [1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow
                     transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.
                     2、本报告用于生物学数据比对、分析，非临床检测报告。'), $format19);
@@ -3010,7 +3010,7 @@ sub RUN_Click{
             $worksheet->set_column(4,5,11);
             $worksheet->set_column(6,7,11);
             # $worksheet->set_column(8,8,10);
-            my @rows = (65,1,1,28,18,14,14,14,14,14,14,14,14,14,5,18,18,18,18,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,35,10,10,10,10);
+            my @rows = (45,1,1,28,18,14,14,14,14,14,14,14,14,14,5,18,18,18,18,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,35,10,10,10,10);
             for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
 
             # 设置页面的左右及上边距
@@ -3051,7 +3051,7 @@ sub RUN_Click{
             $worksheet->set_footer($footer);
 
             # 在第一行第二列插入 公司logo (pic/logo.png)
-            $worksheet->insert_image('A1', "pic/logo.png", 1, 55, 0.12, 0.12);
+            $worksheet->insert_image('A1', "pic/logo.png", 1, 30, 0.12, 0.12);
 
             # 写入 各项信息
             ################## 报告头 部分 #########################
@@ -3285,7 +3285,7 @@ sub RUN_Click{
             $worksheet->merge_range('B47:H47', decode('GB2312','2.本报告仅对本次检验的样本负责，结果仅供临床医生参考。'), $format19);
             $worksheet->merge_range('B48:H48', decode('GB2312','3.样本保存有一定期限，若对报告结果有疑义，请在自报告日期起7天内提出复检申请，逾期不再受理。'), $format19);
             $worksheet->merge_range('B49:H52', decode('GB2312','4.嵌合状态界定[1]:
-完全嵌合状态（CC）: DC≥95%; 混合嵌合状态（MC）:5%≤DC<95%； 微嵌合状态，DC〈5%。
+完全嵌合状态(CC): DC≥95%; 混合嵌合状态(MC): 5%≤DC<95%； 微嵌合状态: DC<5%。
 [1] Outcome of patients with hemoglobinopathies given either cord blood or bone marrow transplantation from an HLA-idebtucak sibling.Blood.2013,122(6):1072-1078.'), $format20);
 
             ########################################### 输出 "报告" 表单 完成 ###################################################################
@@ -3380,7 +3380,7 @@ sub RUN_Click{
                     $graphic->set_column(0,0,11);
                     $graphic->set_column(1,7,11);
                     # 设置各行的高度
-                    my @rows = (65,1,1,28,5,18,8,15.6,15.6,18.6,
+                    my @rows = (45,1,1,28,5,18,8,15.6,15.6,18.6,
                                 25.8,18.6,19.2,24.6,19.8,16.2,16.2,16.2,16.2,16.2,
                                 16.2,16.2,16.2,24,18.75,16.25,15,15,15);
                     for my $i(0 .. $#rows){
@@ -3408,7 +3408,7 @@ sub RUN_Click{
 
                     # B1 插入 logo
                     # 在第一行第二列插入 公司logo (pic/logo.png)
-                    $graphic->insert_image('A1', "pic/logo.png", 1, 55, 0.12, 0.12);
+                    $graphic->insert_image('A1', "pic/logo.png", 1, 30, 0.12, 0.12);
                     ################## 报告头 部分 #########################
                     $graphic->merge_range('A1:H1', decode('GB2312','广州君瑞康生物科技有限公司'), $format1);
                     $graphic->merge_range('A2:H2', decode('GB2312',''), $format2);  # 留 空行
