@@ -2968,12 +2968,18 @@ sub RUN_Click{
         $sb->Resize( $main->ScaleWidth(), $sb->Height() );
         $sb->Text("开始生成每个患者多份检测样本的合并报告，正在生成文件...");  # 状态条，输出提示信息
         print "L2766:开始生成每个患者多份检测样本的合并报告，正在生成文件...\n" ;
+        $RptBox -> Append("===== 开始生成每个患者多份检测样本的汇总报告 =====\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
         # 遍历所有 患者编码
         my $tt = 0 ;
         for my $tempid (keys %Chimerism){
             print "L2771:$tt\n" ;
-            if($tt >= 5){ print "Get out .. \n"; last; }
+            # if($tt >= 5){ print "Get out .. \n"; last; }
             print "L2769:", $tempid,"|", $#{$Chimerism{$_}}+1,"\n";
+            if (! exists $this_patient_ID_and_report_id{$tempid}){
+                print("L2971: No new report for $tempid. Move to next tempid.\n");
+                next;
+            }
+            $RptBox -> Append($this_patient_ID_and_report_id{$tempid}.'...');  # 更新 "生成报告" 部分的文本框中显示的提示信息
 
             # 定义 报告单 输出文件
             ####### 需要获取 患者 本轮检测的报告单编号 ######
@@ -3321,6 +3327,7 @@ sub RUN_Click{
                             $Chmrsm = sprintf ("%.2f", $Chmrsm);  # 将 百分比格式 转换为 小数（保留小数点后2位）
                             my $Smplid = $SampleID{$tempid}[$i];   # 实验编码 # 数组里每一个元素都是 hash表，用于存储每个 患者编码 对应的每次检测的 实验编码
                             my $SmpType = $sampleType{$Smplid};  # 供患信息中 实验编码 对应的 分选类型 / 样本类型
+                            print "L3324:", $tempid , "|", $i, "|", $Smplid, "|", $SmpType , "|", $Chmrsm , "\n" ;
                             next unless $SmpType;  # 如果样本类型为空，则跳到下一份报告单
                             next if $SmpType eq "-";  # 如果样本类型为 "-"，则跳到下一份报告单
                             my $rptDate = DateUnify($ReportDate{$tempid}[$i]);  # 获取 患者编码 对应的 第i份 报告的 报告日期
@@ -3588,8 +3595,10 @@ sub RUN_Click{
         $sb->Resize( $main->ScaleWidth(), $sb->Height() );
         if ($success){
                 $sb->Text("汇总报告输出完成");
+                $RptBox -> Append("===== 汇总报告输出完成 =====\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
         }else{
                 $sb->Text("汇总报告输出完成（有错误）");
+                $RptBox -> Append("===== 汇总报告输出完成（有错误） =====\r\n");  # 更新 "生成报告" 部分的文本框中显示的提示信息
         }
 
         $RUNwindow -> Hide();
