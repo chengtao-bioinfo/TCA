@@ -1123,8 +1123,8 @@ A:
         $worksheet->set_column(12,12, 1.75);  # 设置12列 (第13列)的宽度为 1.75
         $worksheet->set_column(13,15, 10);  # 设置13-15列 (第14-16列)的宽度为 10
 
-        my $pages = int(($#TCA_id+1) / 10)+1;  # 每个页面打印10个报告单对应的 "术前患者"和"术前供者"的型别，@TCA_id:存储 供患信息.txt 中的报告单编号
-
+        # my $pages = int(($#TCA_id+1) / 5)+1;  # 每个页面打印5个报告单对应的 "术前患者"和"术前供者"的型别，@TCA_id:存储 供患信息.txt 中的报告单编号
+        my $pages = int(($#TCA_id-1) / 5)+1;
         foreach my $i(0..$pages*39-1){  # 每个打印页面包括 40行
                 $worksheet->set_row($i, 12.7);  # 设置 行高 为 12.7
         }
@@ -1138,8 +1138,8 @@ A:
                 foreach (@markers_jrk){
                         $worksheet->write(($i-1)*38+$j,0,$markers_jrk[$j-2], $format1);
                         $worksheet->write(($i-1)*38+$j,15,$markers_jrk[$j-2], $format1);
-                        $worksheet->write(($i-1)*38+$j+19,0,$markers_jrk[$j-2], $format1);
-                        $worksheet->write(($i-1)*38+$j+19,15,$markers_jrk[$j-2], $format1);
+#                        $worksheet->write(($i-1)*38+$j+28,0,$markers_jrk[$j-2], $format1);
+#                        $worksheet->write(($i-1)*38+$j+28,15,$markers_jrk[$j-2], $format1);
                         $j ++;
                 }
         }
@@ -1153,10 +1153,10 @@ A:
                 my $strA;
                 my $strB;
                 # 每一行打印5个 报告单编号 对应的 "术前患者""术前供者" 的型别
-                $worksheet->write(int($i/5)*19,$i%5*3+1,$data_in[$seq[-1]][7], $format1);  # 第0行 第1列，写上 "术前患者" 的实验编码
-                $worksheet->write(int($i/5)*19,$i%5*3+2,decode('GB2312', $data_in[$seq[-1]][9]), $format1);  # 第0行 第2列，写上 "术前患者" 的姓名
-                $worksheet->write(int($i/5)*19+1,$i%5*3+1,$AAA, $format1);  # 第1行 第1列，写上 "术前患者" 的型别
-                $worksheet->write(int($i/5)*19+1,$i%5*3+2,$BBB, $format1);  # 第1行 第2列，写上 "术前供者" 的型别
+                $worksheet->write(int($i/5)*38,$i%5*3+1,$data_in[$seq[-1]][7], $format1);  # 第0行 第1列，写上 "术前患者" 的实验编码
+                $worksheet->write(int($i/5)*38,$i%5*3+2,decode('GB2312', $data_in[$seq[-1]][9]), $format1);  # 第0行 第2列，写上 "术前患者" 的姓名
+                $worksheet->write(int($i/5)*38+1,$i%5*3+1,$AAA, $format1);  # 第1行 第1列，写上 "术前患者" 的型别
+                $worksheet->write(int($i/5)*38+1,$i%5*3+2,$BBB, $format1);  # 第1行 第2列，写上 "术前供者" 的型别
                 foreach (@markers_jrk){  # 遍历写入每个 marker 的型别
                         unless (exists $PrevAllele{$AAA}){  # "术前患者" 对应的 实验编码在 已有数据 中不存在  # %PrevAllele 保存已有数据中 每个 实验编码 的每个marker 对应的 型别信息
                                 $strA = ' ';  # 不存在，则将 $strA = ' '
@@ -1168,8 +1168,8 @@ A:
                         }else{  # "术前供者" 对应的 实验编码在 已有数据 中存在
                                 $strB =  $PrevAllele{$BBB}{$_};  # 将 $strB 设置为 已有数据 中该marker对应的型别
                         }
-                        $worksheet->write(int($i/5)*19+$j,$i%5*3+1, decode('GB2312', $strA), $format1);  # 遍历写上 "术前患者" 的每个marker的型别
-                        $worksheet->write(int($i/5)*19+$j,$i%5*3+2, decode('GB2312', $strB), $format1);  # 遍历写上 "术前患者" 的每个marker的型别
+                        $worksheet->write(int($i/5)*38+$j,$i%5*3+1, decode('GB2312', $strA), $format1);  # 遍历写上 "术前患者" 的每个marker的型别
+                        $worksheet->write(int($i/5)*38+$j,$i%5*3+2, decode('GB2312', $strB), $format1);  # 遍历写上 "术前患者" 的每个marker的型别
                         $j ++;
                 }
         }
@@ -2411,7 +2411,7 @@ sub RUN_Click{
                 $worksheet->write('I05',decode('GB2312',$doctor{$num3[$z]}),$format4);
                 my $testt;
                 my $cell_type = "" ;
-                if ($cells{$num3[$z]} =~ /(\S+)细胞分选/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞分选 / T细胞分选 / NK细胞分选 ...)
+                if ($cells{$num3[$z]} =~ /(\S+)细胞/){  # 供患信息中 实验编码 对应的 分选类型 (B细胞 / T细胞 / NK细胞 ...)
                     $cell_type = $1 ;  # B / T / NK / 粒
                     $testt = $cell_type.'细胞嵌合状态分析';  # 根据 "分选类型" 动态输出 "检测项目"
                 }
@@ -2648,25 +2648,25 @@ sub RUN_Click{
                     }
 
                     $hash_this_patient_ID_and_shuhou_patient_waizhouxue_or_gusuixue_genotypes{$tempid} = $allele{$num3[$z]}  ; # 获取 术后患者 外周血/骨髓血 样本的型别结果 : marker => genotype
-                } elsif ($patient_sampleDetailType =~ /\-T细胞/) {  # T细胞
+                } elsif ($patient_sampleDetailType =~ /T细胞/) {  # T细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_T_cell_expid{$tempid} = $num3[$z] ;
                     }
 
                     $hash_this_patient_ID_and_shuhou_patient_T_cell_genotypes{$tempid} = $allele{$num3[$z]}  ; # 获取 术后患者 T细胞 样本的型别结果 : marker => genotype
-                } elsif ($patient_sampleDetailType =~ /\-B细胞/) {  # B细胞
+                } elsif ($patient_sampleDetailType =~ /B细胞/) {  # B细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_B_cell_expid{$tempid} = $num3[$z] ;
                     }
 
                     $hash_this_patient_ID_and_shuhou_patient_B_cell_genotypes{$tempid} = $allele{$num3[$z]}  ; # 获取 术后患者 B细胞 样本的型别结果 : marker => genotype
-                } elsif ($patient_sampleDetailType =~ /\-NK细胞/) {  # NK细胞
+                } elsif ($patient_sampleDetailType =~ /NK细胞/) {  # NK细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_NK_cell_expid{$tempid} = $num3[$z] ;
                     }
 
                     $hash_this_patient_ID_and_shuhou_patient_NK_cell_genotypes{$tempid} = $allele{$num3[$z]}  ; # 获取 术后患者 NK细胞 样本的型别结果 : marker => genotype
-                } elsif ($patient_sampleDetailType =~ /\-粒细胞/) {  # 粒细胞
+                } elsif ($patient_sampleDetailType =~ /粒细胞/) {  # 粒细胞
                     if (!exists $this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid}) {
                         $this_patient_ID_and_shuhou_patient_li_cell_expid{$tempid} = $num3[$z] ;
                     }
@@ -3124,29 +3124,29 @@ sub RUN_Click{
                     $conclusion_row_index ++ ;
                 }
             }
-            for my $q (0..$#this_patient_sampleDetailTypes){
-                if ($this_patient_sampleDetailTypes[$q] =~ /-T细胞/){  # T细胞分选类型
+            for my $q (0..$#this_patient_sampleDetailTypes){ print "L3127:$this_patient_sampleDetailTypes[$q]\n";
+                if ($this_patient_sampleDetailTypes[$q] =~ /T细胞/){  # T细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
                     $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','    '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++ ;
                 }
             }
             for my $q (0..$#this_patient_sampleDetailTypes){  # 写 "B细胞分选结果"
-                if ($this_patient_sampleDetailTypes[$q] =~ /-B细胞/){  # B细胞分选类型
+                if ($this_patient_sampleDetailTypes[$q] =~ /B细胞/){  # B细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
                     $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','    '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++ ;
                 }
             }
             for my $q (0..$#this_patient_sampleDetailTypes){  # 写 "NK细胞分选结果"
-                if ($this_patient_sampleDetailTypes[$q] =~ /-NK细胞/){  # NK细胞分选类型
+                if ($this_patient_sampleDetailTypes[$q] =~ /NK细胞/){  # NK细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
                     $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','    '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++ ;
                 }
             }
             for my $q (0..$#this_patient_sampleDetailTypes){  # 写 "粒细胞分选结果"
-                if ($this_patient_sampleDetailTypes[$q] =~ /-粒细胞/){  # 粒细胞分选类型
+                if ($this_patient_sampleDetailTypes[$q] =~ /粒细胞/){  # 粒细胞分选类型
                     print "L3038:$conclusion_row_index|$this_patient_sampleDetailTypes[$q]|$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}\n";
                     $worksheet->merge_range($conclusion_row_index+10,0,$conclusion_row_index+10,7,decode('GB2312','    '.$hash_this_patient_conclusions->{$this_patient_sampleDetailTypes[$q]}), $format7);  # 写入每一类样本的结论
                     $conclusion_row_index ++;
