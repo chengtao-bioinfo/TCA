@@ -3059,7 +3059,7 @@ sub RUN_Click{
             $worksheet->set_footer($footer);
 
             # 在第一行第二列插入 公司logo (pic/logo.png)
-            $worksheet->insert_image('A1', "pic/logo.png", 1, 16, 0.17623, 0.176);
+            $worksheet->insert_image('A1', "pic/logo.png", 1, 16, 0.1437666, 0.1435789);
 
             # 写入 各项信息
             ################## 报告头 部分 #########################
@@ -3427,14 +3427,14 @@ sub RUN_Click{
 
                     # B1 插入 logo
                     # 在第一行第二列插入 公司logo (pic/logo.png)
-                    $graphic->insert_image('A1', "pic/logo.png", 1, 16, 0.17623, 0.176);
+                    $graphic->insert_image('A1', "pic/logo.png", 1, 16, 0.1437666, 0.1435789);
 
                     # 写入 各项信息
                     ################## 报告头 部分 #########################
                     # $graphic->merge_range('A1:H1', decode('GB2312','广州君瑞康生物科技有限公司'), $format1);
-                    my $bold = $workbook->add_format(size => 12, bold => 1 , font => decode('GB2312','宋体'));
-                    my $normal = $workbook->add_format(size => 11, font => decode('GB2312','宋体'));
-                    my $fmt_telephone = $workbook->add_format(size => 10, font => decode('GB2312','宋体'));
+                    my $bold = $workbook->add_format(size => 9, bold => 0 , font => decode('GB2312','宋体'));
+                    my $normal = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
+                    my $fmt_telephone = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
                     my $fmt_align = $workbook->add_format( align => 'right', valign => 'top', 'bottom' => 2);
                     $fmt_align->set_text_wrap();
                     $graphic->merge_range_type( 'rich_string', 'A1:H1', $bold, decode('GB2312',"广州君瑞康生物科技有限公司"), "\n", $normal, decode('GB2312',"广州市黄埔区新瑞路6号二栋A205"), "\n", $fmt_telephone, decode('GB2312',"020-62313880"), "\n", $fmt_align);
