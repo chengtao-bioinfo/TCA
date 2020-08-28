@@ -3067,7 +3067,7 @@ sub RUN_Click{
             my $bold = $workbook->add_format(size => 9, bold => 0 , font => decode('GB2312','宋体'));
             my $normal = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
             my $fmt_telephone = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
-            my $fmt_align = $workbook->add_format( align => 'right', valign => 'top', 'bottom' => 2);
+            my $fmt_align = $workbook->add_format( align => 'right', valign => 'top', 'bottom' => 1.7);
             $fmt_align->set_text_wrap();
             $worksheet->merge_range_type( 'rich_string', 'A1:H1', $bold, decode('GB2312',"广州君瑞康生物科技有限公司"), "\n", $normal, decode('GB2312',"广州市黄埔区新瑞路6号二栋A205"), "\n", $fmt_telephone, decode('GB2312',"020-62313880"), "\n", $fmt_align);
             $worksheet->merge_range('A2:H2', decode('GB2312',''), $format2);  # 留 空行
@@ -3435,7 +3435,7 @@ sub RUN_Click{
                     my $bold = $workbook->add_format(size => 9, bold => 0 , font => decode('GB2312','宋体'));
                     my $normal = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
                     my $fmt_telephone = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
-                    my $fmt_align = $workbook->add_format( align => 'right', valign => 'top', 'bottom' => 2);
+                    my $fmt_align = $workbook->add_format( align => 'right', valign => 'top', 'bottom' => 1.7);
                     $fmt_align->set_text_wrap();
                     $graphic->merge_range_type( 'rich_string', 'A1:H1', $bold, decode('GB2312',"广州君瑞康生物科技有限公司"), "\n", $normal, decode('GB2312',"广州市黄埔区新瑞路6号二栋A205"), "\n", $fmt_telephone, decode('GB2312',"020-62313880"), "\n", $fmt_align);
                     $graphic->merge_range('A2:H2', decode('GB2312',''), $format2);  # 留 空行
