@@ -1916,7 +1916,7 @@ sub RUN_Click{
                 # print $num2,"|",$relation{$num2},"\n";
                 # $count_sum[$z] = 0;
                 $count_n[$z] = 0;  # 记录每份报告 有嵌合率结果的位点（有效位点）个数
-                $count_avg[$z] = 0;  # 记录每份报告 有效位点的嵌合率 的平均值
+                $count_avg[$z] = 0;  # 记录每份报告 有效位点的嵌合率 的平均值移植后嵌合体状态分析报告
                 $SD[$z] = 0;  # 记录每份报告 有效位点的嵌合率 的SD
 
                 my $errorcount = 0;  # 存在错误的marker位点个数
@@ -2395,7 +2395,7 @@ sub RUN_Click{
                 # $worksheet->set_footer($footer);
 
                 # 在第一行第二列插入 公司logo (pic/logo.png)
-                $worksheet->insert_image('B1', "pic/logo.png", 10, 10, 0.15, 0.15);
+                $worksheet->insert_image('B1', "pic/logo.png", 10, 10, 0.14091, 0.15);
 
                 # 写入 各项信息
                 $worksheet->merge_range('B1:I1', decode('GB2312','嵌合状态分析报告'), $format1);
@@ -2827,7 +2827,7 @@ sub RUN_Click{
                         # $graphic->set_footer($footer);  # $footer: L2418 - L2421
 
                         # B1 插入 logo
-                        $graphic->insert_image('B1', "pic/logo.png", 10, 10, 0.15, 0.15);
+                        $graphic->insert_image('B1', "pic/logo.png", 10, 10, 0.14091, 0.15);
 
                         # 写入 "嵌合曲线" 表头
                         $graphic->merge_range('B1:G1', decode('GB2312','嵌合曲线'), $format1);
@@ -3016,7 +3016,7 @@ sub RUN_Click{
             $worksheet->set_column(4,5,11);
             $worksheet->set_column(6,7,11);
             # $worksheet->set_column(8,8,10);
-            my @rows = (45,1,1,28,18,14,14,14,14,14,14,14,14,14,5,18,18,18,18,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,35,10,10,10,10);
+            my @rows = (44,1.2,0.5,28,18,14,14,14,14,14,14,14,14,14,5,18,18,18,18,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,35,10,10,10,10);
             for my $i (0 .. $#rows){$worksheet->set_row($i, $rows[$i]);}
 
             # 设置页面的左右及上边距
@@ -3027,22 +3027,24 @@ sub RUN_Click{
 
             ###################  定义excel文件各部分的格式  #######################################################
             my $format1  = $workbook->add_format(size => 16, bold => 1, align => 'center',                      font => decode('GB2312','宋体'), color => '#00B0F0', 'bottom' => 2); # "广州君瑞康生物科技有限公司"
-            my $format2  = $workbook->add_format(size => 11);  # 不画 框线
-            my $format3  = $workbook->add_format(size => 16, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体')); # "移植后嵌合体状态分析报告"
+            my $format2  = $workbook->add_format(size => 11, bg_color => 'black');  # 不画 框线
+            my $format2_2  = $workbook->add_format(size => 11);  # 不画 框线
+            my $format3  = $workbook->add_format(size => 16, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体')); # "移植后嵌合体状态分析报告"
             my $format4  = $workbook->add_format(size => 12,            align => 'right',  valign => 'vcenter', font => decode('GB2312','宋体')); # "报告单编号"
             my $format5  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # 患者 及 供者信息表 单元格 格式
             my $format6  = $workbook->add_format(size => 11, bold => 1, align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1,                 ); # "检测结果:"
             my $format7  = $workbook->add_format(size => 11, bold => 1, align => 'left', valign => 'vcenter', font => decode('GB2312','宋体'),                             ); # 检测结果 内容
             my $format8  = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # "基因座"
             my $format9  = $workbook->add_format(size => 11,            align => 'center', valign => 'bottom', font => decode('GB2312','宋体'), 'top' => 1,                'left' => 1, 'right' => 1); # "样本编号"
-            my $format10 = $workbook->add_format(size => 7,             align => 'center', valign => 'top', font => 'Times New Roman',                   'bottom' => 1, 'left' => 1, 'right' => 1); # 样本编号 内容
+            my $format10 = $workbook->add_format(size => 8,             align => 'center', valign => 'top', font => decode('GB2312','宋体'),                   'bottom' => 1, 'left' => 1, 'right' => 1); # 样本编号 内容
             my $format11 = $workbook->add_format(size => 11,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1,  'bottom' => 1, 'left' => 1, 'right' => 1); # "患者移植前" 和 "供者"
             my $format12 = $workbook->add_format(size => 11,            align => 'center', valign => 'bottom', font => decode('GB2312','宋体'), 'top' => 1,                 'left' => 1, 'right' => 1); # "患者移植后"
             my $format13 = $workbook->add_format(size => 11,            align => 'center', valign => 'top', font => decode('GB2312','宋体'),              'bottom' => 1, 'left' => 1, 'right' => 1); # "(骨髓血)/(外周血)" / "(T细胞)" / "(B细胞)" / "(NK细胞)" / "(粒细胞)"
-            my $format14 = $workbook->add_format(size => 10,            align => 'center', valign => 'vcenter', font => 'Times New Roman',       'top' => 1,  'bottom' => 1, 'left' => 1, 'right' => 1);  # marker名称
+            my $format14 = $workbook->add_format(size => 10,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'),       'top' => 1,  'bottom' => 1, 'left' => 1, 'right' => 1);  # marker名称
             my $format15 = $workbook->add_format(size => 10,            align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'),  'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # marker 的型别
             my $format16 = $workbook->add_format(size => 11,            align => 'right', valign => 'vcenter', font => decode('GB2312','宋体'));  # "检测者" | "复核者" | "报告日期" 及其 内容
-            my $format21 = $workbook->add_format(size => 11,            align => 'left', valign => 'vcenter', font => decode('GB2312','宋体'));  #  报告日期 内容
+            my $format16_1 = $workbook->add_format(size => 11,            align => 'left', valign => 'vcenter', font => decode('GB2312','宋体'));  # "检测者"
+            my $format21 = $workbook->add_format(size => 11,            valign => 'vcenter', font => decode('GB2312','宋体'), color => 'black');  #  报告日期 内容
             my $format17  = $workbook->add_format(size => 11,           align => 'center', valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'bottom' => 1, 'left' => 1, 'right' => 1); # "备注"
             my $format18 = $workbook->add_format(size => 8, valign => 'vcenter', font => decode('GB2312','宋体'), 'top' => 1, 'left' => 1, 'right' => 1, 'text_wrap' => 1); #备注的 第一行 内容
             my $format19 = $workbook->add_format(size => 8, valign => 'vcenter', font => decode('GB2312','宋体'),             'left' => 1, 'right' => 1, 'text_wrap' => 1); #备注的 第二-三行 内容
@@ -3059,7 +3061,7 @@ sub RUN_Click{
             $worksheet->set_footer($footer);
 
             # 在第一行第二列插入 公司logo (pic/logo.png)
-            $worksheet->insert_image('A1', "pic/logo.png", 1, 16, 0.1437666, 0.1435789);
+            $worksheet->insert_image('A1', "pic/logo.png", 1, 16, 0.14091, 0.15);
 
             # 写入 各项信息
             ################## 报告头 部分 #########################
@@ -3067,11 +3069,11 @@ sub RUN_Click{
             my $bold = $workbook->add_format(size => 9, bold => 0 , font => decode('GB2312','宋体'));
             my $normal = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
             my $fmt_telephone = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
-            my $fmt_align = $workbook->add_format( align => 'right', valign => 'top', 'bottom' => 1.7);
+            my $fmt_align = $workbook->add_format( align => 'right', valign => 'top');
             $fmt_align->set_text_wrap();
             $worksheet->merge_range_type( 'rich_string', 'A1:H1', $bold, decode('GB2312',"广州君瑞康生物科技有限公司"), "\n", $normal, decode('GB2312',"广州市黄埔区新瑞路6号二栋A205"), "\n", $fmt_telephone, decode('GB2312',"020-62313880"), "\n", $fmt_align);
             $worksheet->merge_range('A2:H2', decode('GB2312',''), $format2);  # 留 空行
-            $worksheet->merge_range('A3:H3', decode('GB2312',''), $format2);  # 留 空行
+            $worksheet->merge_range('A3:H3', decode('GB2312',''), $format2_2);  # 留 空行
             $worksheet->merge_range('A4:H4', decode('GB2312','移植后嵌合体状态分析报告'), $format3);  #
 
             ################## 报告单编号 部分 #########################
@@ -3154,7 +3156,7 @@ sub RUN_Click{
             }
 
             # 本次检测所用 样本类型 的型别汇总表
-            $worksheet->merge_range('A15:H15', decode('GB2312',''), $format2);
+            $worksheet->merge_range('A15:H15', decode('GB2312',''), $format2_2);
             $worksheet->merge_range('A16:A19', decode('GB2312','基因座'), $format8);
             $worksheet->write('B16', decode('GB2312','样本编号'), $format9);
             $worksheet->write('B17', decode('GB2312',$this_patient_ID_and_shuqian_patient_expid{$tempid}), $format10);
@@ -3278,7 +3280,7 @@ sub RUN_Click{
             # 在检测日期处插入矩形框，设置透明度
             # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
             if (-e "pic/检测者.png"){
-                 $worksheet->insert_image('C45', "pic/检测者.png", 0, 4, 1.5, 1.5);
+                 $worksheet->insert_image('B45', "pic/检测者.png", -40, 4, 1.5, 1.5);
             }
             if (-e "pic/复核者.png"){
                  $worksheet->insert_image('E45', "pic/复核者.png", 0, 8, 1.0, 1.0);
@@ -3287,13 +3289,13 @@ sub RUN_Click{
                  $worksheet->insert_image('G45', "pic/盖章.png", 3, -30, 0.998, 0.977);
             }
 
-            my $rectangle_report_date = $workbook->add_shape(type => "rect", text => decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), format => $format21, valign => 'ctr', align => 'l', line => '');
-            $worksheet->insert_shape('G45', $rectangle_report_date, 0, 0, 2, 1);
-            $worksheet->write('B45', decode('GB2312','检测者：'), $format16);
+            my $rectangle_report_date = $workbook->add_shape(type => "rect", text => decode('GB2312',sprintf("报告日期：%d-%02d-%02d",$year,$mon,$mday)), format => $format21, valign => 'ctr', align => 'r', line => '');
+            $worksheet->insert_shape('G45', $rectangle_report_date, 0, 0, 3.22, 1);
+            $worksheet->write('A45', decode('GB2312','检测者：'), $format16_1);
             $worksheet->write('C45', decode('GB2312',''), $format16);
             $worksheet->write('D45', decode('GB2312','复核者：'), $format16);
             $worksheet->write('E45', decode('GB2312',''), $format16);
-            $worksheet->write('F45', decode('GB2312','报告日期：'), $format16);
+            # $worksheet->write('G45', decode('GB2312','报告日期：'), $format16);
             # $worksheet->merge_range('G45:H45', decode('GB2312',sprintf("%d-%02d-%02d",$year,$mon,$mday)), $format21);
 
 
@@ -3399,7 +3401,7 @@ sub RUN_Click{
                     $graphic->set_column(0,0,11);
                     $graphic->set_column(1,7,11);
                     # 设置各行的高度
-                    my @rows = (45,1,1,28,5,18,8,15.6,15.6,18.6,
+                    my @rows = (44,1.2,0.5,28,5,18,8,15.6,15.6,18.6,
                                 25.8,18.6,19.2,24.6,19.8,16.2,16.2,16.2,16.2,16.2,
                                 16.2,16.2,16.2,24,18.75,16.25,15,15,15);
                     for my $i(0 .. $#rows){
@@ -3427,7 +3429,7 @@ sub RUN_Click{
 
                     # B1 插入 logo
                     # 在第一行第二列插入 公司logo (pic/logo.png)
-                    $graphic->insert_image('A1', "pic/logo.png", 1, 16, 0.1437666, 0.1435789);
+                    $graphic->insert_image('A1', "pic/logo.png", 1, 16, 0.14091, 0.15);
 
                     # 写入 各项信息
                     ################## 报告头 部分 #########################
@@ -3435,16 +3437,16 @@ sub RUN_Click{
                     my $bold = $workbook->add_format(size => 9, bold => 0 , font => decode('GB2312','宋体'));
                     my $normal = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
                     my $fmt_telephone = $workbook->add_format(size => 9, font => decode('GB2312','宋体'));
-                    my $fmt_align = $workbook->add_format( align => 'right', valign => 'top', 'bottom' => 1.7);
+                    my $fmt_align = $workbook->add_format( align => 'right', valign => 'top');
                     $fmt_align->set_text_wrap();
                     $graphic->merge_range_type( 'rich_string', 'A1:H1', $bold, decode('GB2312',"广州君瑞康生物科技有限公司"), "\n", $normal, decode('GB2312',"广州市黄埔区新瑞路6号二栋A205"), "\n", $fmt_telephone, decode('GB2312',"020-62313880"), "\n", $fmt_align);
                     $graphic->merge_range('A2:H2', decode('GB2312',''), $format2);  # 留 空行
-                    $graphic->merge_range('A3:H3', decode('GB2312',''), $format2);  # 留 空行
+                    $graphic->merge_range('A3:H3', decode('GB2312',''), $format2_2);  # 留 空行
                     $graphic->merge_range('A4:H4', decode('GB2312','移植后嵌合体状态曲线图'), $format3);  #
 
                     # 写入 "嵌合曲线" 表头
                     # 插入一个空行
-                    $graphic->merge_range('A5:H5', decode('GB2312',''), $format2);
+                    $graphic->merge_range('A5:H5', decode('GB2312',''), $format2_2);
 
                     # 写入 "患者姓名" 表头
                     $graphic->write('A6',decode('GB2312','患者姓名：'), $Gfmt1);
