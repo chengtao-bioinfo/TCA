@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="25ae0af0-be83-4a2d-8f99-69946092e0ed" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1c6Z9vrxhqcLuoUtLeVi1aiPDR7" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/Report_TCA/.PrevSamples.txt" />
+    <property name="settings.editor.selected.configurable" value="PERL5_MAIN_SETTINGS" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\君瑞康\4.dev_projects\TCA" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="25ae0af0-be83-4a2d-8f99-69946092e0ed" name="Default Changelist" comment="" />
+      <created>1589850855869</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1589850855869</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Initial submit">
+      <created>1589852409818</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1589852409818</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Update TCAconfig.ini">
+      <created>1590388672220</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1590388672221</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Update packages_install.bat">
+      <created>1590388710437</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1590388710437</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Update .PrevChimerism.txt">
+      <created>1590388752295</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1590388752295</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Add annotations for Report_TCA.pl">
+      <created>1590388801219</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1590388801219</updated>
+    </task>
+    <task id="LOCAL-00006" summary="开发 JRK报告输出模块(in Report_TCA.pl)">
+      <created>1590477407701</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1590477407701</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Update.">
+      <created>1590477882511</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1590477882511</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Update.">
+      <created>1590497346108</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1590497346108</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Update.">
+      <created>1590502574721</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1590502574721</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Update.">
+      <created>1590545948048</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1590545948048</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Update.">
+      <created>1590563180142</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1590563180142</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Update.">
+      <created>1590576593289</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1590576593289</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Update.">
+      <created>1590581531337</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1590581531337</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Update.">
+      <created>1590581644354</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1590581644354</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Update.">
+      <created>1590646058475</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1590646058491</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Update .PrevChimerism.txt for pipeline test.">
+      <created>1590646093654</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1590646093654</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Update.">
+      <created>1590646553652</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1590646553652</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Update logo.">
+      <created>1590648127538</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1590648127538</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Update pictures used in report.">
+      <created>1590648165982</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1590648165982</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Update and pass first test of 25 markers data from JRK lab.">
+      <created>1592556831526</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1592556831526</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Update and pass first test of 25 markers data from JRK lab.">
+      <created>1595236697514</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1595236697514</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Update to v20200721. (修复单个样本报告表格显示异常的问题)">
+      <created>1595315680225</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1595315680225</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Update to v20200722. (1.调整上边距; 2.调整备注信息里括号、大于号为西文字符)">
+      <created>1595324144644</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1595324144644</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Update to v20200722. (1.调整上边距; 2.调整备注信息里括号、大于号为西文字符)">
+      <created>1595324598587</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1595324598587</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Update to v20200731.包括以下4点更新：&#10;1、移植后嵌合体状态分析咨询报告 去掉 咨询二字&#10;3、报告章大小调整，以不盖日期或日期字置顶&#10;4、报告合适位置增加公司地址及电话  广州市黄埔区新瑞路6号二栋2层A205房、A206房  020-62313880&#10;5、单类型样本绘图图表里出现样本类型，调整为不出现">
+      <created>1596201762142</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1596201762142</updated>
+    </task>
+    <task id="LOCAL-00026" summary="Update to v20200803.包括以下4点更新：&#10;v20200803&#10; 1. 解决单次分析支持生成报告数&lt;=5的限制&#10; 2. 解决生成汇总报告时，本次未检测但在.PrevChimersim.txt中存有检测记录样本，异常错误信息提示">
+      <created>1596426972193</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1596426972193</updated>
+    </task>
+    <task id="LOCAL-00027" summary="Update to v20200811.包括以下3点更新：&#10;v20200811:&#10; 1. 解决T细胞/B细胞/NK细胞/粒细胞，检测结果中无法显示细胞类型的问题&#10; 2. 解决嵌合曲线中，&quot;某细胞/某细胞分选&quot;显示为不同类型的问题&#10; 3. 解决 &quot;打印已有分型&quot; 显示异常的问题">
+      <created>1597115881174</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1597115881177</updated>
+    </task>
+    <task id="LOCAL-00028" summary="同步更新&quot;版本记录.txt&quot;文件.">
+      <created>1597115907282</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1597115907282</updated>
+    </task>
+    <task id="LOCAL-00029" summary="根据销售反馈，将页眉中公司名称、地址及电话字体及大小进行调整。&#10;采用 宋体 + 小五号 (size =&gt; 9).">
+      <created>1598577640559</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1598577640559</updated>
+    </task>
+    <task id="LOCAL-00030" summary="根据销售反馈，将LOGO图片大小进行调整。">
+      <created>1598578199993</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1598578199993</updated>
+    </task>
+    <task id="LOCAL-00031" summary="根据销售反馈，将页眉下方的分割线调细，以尽量与其他报告中的粗细一致。">
+      <created>1598579273767</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1598579273767</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Update to v20200831:&#10;1. 调整LOGO的大小及边距&#10;2. 调整页眉中公司名称、地址及电话，字体及大小(使用宋体+小五)&#10;3. 将页眉下方的分割线调细&#10;4. 将报告内容 (&quot;移植后嵌合体状态分析报告&quot;) 的字体由&quot;粗体&quot;调整为&quot;常规&quot;&#10;5. 报告内容的字体中英文均统一为&quot;宋体&quot;&#10;6. &quot;检测者&quot;位置调整为左对齐，&quot;报告日期&quot;位置调整为右对齐">
+      <created>1598853638716</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1598853638716</updated>
+    </task>
+    <task id="LOCAL-00033" summary="更新版本记录文件。">
+      <created>1598854308759</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1598854308759</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initial submit" />
+    <MESSAGE value="Update TCAconfig.ini" />
+    <MESSAGE value="Update packages_install.bat" />
+    <MESSAGE value="Update .PrevChimerism.txt" />
+    <MESSAGE value="Add annotations for Report_TCA.pl" />
+    <MESSAGE value="开发 JRK报告输出模块(in Report_TCA.pl)" />
+    <MESSAGE value="Update .PrevChimerism.txt for pipeline test." />
+    <MESSAGE value="Update." />
+    <MESSAGE value="Update logo." />
+    <MESSAGE value="Update pictures used in report." />
+    <MESSAGE value="Update and pass first test of 25 markers data from JRK lab." />
+    <MESSAGE value="Update to v20200721. (修复单个样本报告表格显示异常的问题)" />
+    <MESSAGE value="Update to v20200722. (1.调整上边距; 2.调整备注信息里括号、大于号为西文字符)" />
+    <MESSAGE value="Update to v20200731.包括以下4点更新：&#10;1、移植后嵌合体状态分析咨询报告 去掉 咨询二字&#10;3、报告章大小调整，以不盖日期或日期字置顶&#10;4、报告合适位置增加公司地址及电话  广州市黄埔区新瑞路6号二栋2层A205房、A206房  020-62313880&#10;5、单类型样本绘图图表里出现样本类型，调整为不出现" />
+    <MESSAGE value="Update to v20200803.包括以下4点更新：&#10;v20200803&#10; 1. 解决单次分析支持生成报告数&lt;=5的限制&#10; 2. 解决生成汇总报告时，本次未检测但在.PrevChimersim.txt中存有检测记录样本，异常错误信息提示" />
+    <MESSAGE value="Update to v20200811.包括以下3点更新：&#10;v20200811:&#10; 1. 解决T细胞/B细胞/NK细胞/粒细胞，检测结果中无法显示细胞类型的问题&#10; 2. 解决嵌合曲线中，&quot;某细胞/某细胞分选&quot;显示为不同类型的问题&#10; 3. 解决 &quot;打印已有分型&quot; 显示异常的问题" />
+    <MESSAGE value="同步更新&quot;版本记录.txt&quot;文件." />
+    <MESSAGE value="根据销售反馈，将页眉中公司名称、地址及电话字体及大小进行调整。&#10;采用 宋体 + 小五号 (size =&gt; 9)." />
+    <MESSAGE value="根据销售反馈，将LOGO图片大小进行调整。" />
+    <MESSAGE value="根据销售反馈，将页眉下方的分割线调细，以尽量与其他报告中的粗细一致。" />
+    <MESSAGE value="Update to v20200831:&#10;1. 调整LOGO的大小及边距&#10;2. 调整页眉中公司名称、地址及电话，字体及大小(使用宋体+小五)&#10;3. 将页眉下方的分割线调细&#10;4. 将报告内容 (&quot;移植后嵌合体状态分析报告&quot;) 的字体由&quot;粗体&quot;调整为&quot;常规&quot;&#10;5. 报告内容的字体中英文均统一为&quot;宋体&quot;&#10;6. &quot;检测者&quot;位置调整为左对齐，&quot;报告日期&quot;位置调整为右对齐" />
+    <MESSAGE value="更新版本记录文件。" />
+    <option name="LAST_COMMIT_MESSAGE" value="更新版本记录文件。" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="963" y="126" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1597029982004">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="963" y="126" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/0.0.1920.1050@0.0.1920.1050" timestamp="1597029982004" />
+    <state x="127" y="0" key="CommitChangelistDialog2" timestamp="1598854307647">
+      <screen x="0" y="0" width="1280" height="689" />
+    </state>
+    <state x="127" y="0" key="CommitChangelistDialog2/0.0.1280.689@0.0.1280.689" timestamp="1598854307647" />
+    <state x="831" y="102" key="CommitChangelistDialog2/0.0.1920.1050@0.0.1920.1050" timestamp="1597115906271" />
+    <state x="301" y="124" key="Vcs.Push.Dialog.v2" timestamp="1600487116935">
+      <screen x="0" y="0" width="1280" height="689" />
+    </state>
+    <state x="301" y="124" key="Vcs.Push.Dialog.v2/0.0.1280.689@0.0.1280.689" timestamp="1600487116935" />
+    <state x="451" y="189" key="Vcs.Push.Dialog.v2/0.0.1920.1050@0.0.1920.1050" timestamp="1597115912342" />
+  </component>
+</project>

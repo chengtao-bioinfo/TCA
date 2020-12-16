@@ -2698,10 +2698,10 @@ sub RUN_Click{
 
                 # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
                 if (-e "pic/检测者.png"){
-                     $worksheet->insert_image('D46', "pic/检测者.png", 5, 5, 1.1, 1.1);
+                     $worksheet->insert_image('D46', "pic/检测者.png", 5, 10, 0.9405, 1);
                 }
                 if (-e "pic/复核者.png"){
-                     $worksheet->insert_image('D47', "pic/复核者.png", 5, 8, 0.8, 0.8);
+                     $worksheet->insert_image('D47', "pic/复核者.png", 5, 10, 1, 1);
                 }
                 if (-e "pic/盖章.png"){
                      $worksheet->insert_image('H46', "pic/盖章.png", 3, -30, 0.998, 0.977);
@@ -3280,10 +3280,10 @@ sub RUN_Click{
             # 在检测日期处插入矩形框，设置透明度
             # 在 "报告" 表单 相应位置，插入 "检测者" "复核者" "盖章" 图片
             if (-e "pic/检测者.png"){
-                 $worksheet->insert_image('B45', "pic/检测者.png", -40, 4, 1.5, 1.5);
+                 $worksheet->insert_image('B45', "pic/检测者.png", -20, 4, 0.9405, 1.0);  # 0.9405
             }
             if (-e "pic/复核者.png"){
-                 $worksheet->insert_image('E45', "pic/复核者.png", 0, 8, 1.0, 1.0);
+                 $worksheet->insert_image('E45', "pic/复核者.png", 0, 4, 1, 1.0);
             }
             if (-e "pic/盖章.png"){
                  $worksheet->insert_image('G45', "pic/盖章.png", 3, -30, 0.998, 0.977);
